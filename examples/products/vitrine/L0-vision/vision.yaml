@@ -1,0 +1,43 @@
+# Vitrine — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: vitrine
+customer:
+  primary:
+    id: CUST-LOJISTA
+    who: "lojista de médio porte que vende online (moda, casa, eletrônicos)"
+    context: "perde venda no checkout por fricção e descobre ruptura de estoque só depois do pagamento"
+  secondary:
+    - id: CUST-COMPRADOR
+      who: "comprador final"
+      context: "quer comprar rápido, sem re-digitar dados, com confiança de que vai receber"
+
+problem:
+  - id: PROB-01
+    statement: "checkout com fricção (login obrigatório, formulário longo) derruba conversão — um em cada três carrinhos é abandonado no pagamento"
+    severity: alta
+    evidence: "benchmark com 15 lojas de médio porte: taxa média de abandono no checkout de 34%"
+  - id: PROB-02
+    statement: "lojista descobre ruptura de estoque só depois que o pedido já foi pago, gerando cancelamento e insatisfação"
+    severity: alta
+    evidence: "entrevista com 10 lojistas: 6 relatam cancelamento por ruptura pelo menos semanalmente"
+
+solution_one_liner: "Checkout de um clique com estoque garantido em tempo real — o que está na vitrine é o que existe para vender."
+
+tenets:
+  - id: TEN-01
+    rule: "nunca vender o que não existe no estoque — a vitrine reflete disponibilidade real, não cache otimista"
+  - id: TEN-02
+    rule: "checkout nunca perde o que o comprador já preencheu — falha de pagamento retoma de onde parou"
+
+north_star:
+  metric: "taxa de conversão do carrinho ao pedido confirmado"
+  target: "+8 p.p. em 6 meses"
+
+hard_questions:
+  - { id: FAQ-01, q: "o que acontece quando dois compradores tentam comprar a última unidade ao mesmo tempo?", owner_layer: L2 }
+  - { id: FAQ-02, q: "e se o pagamento falhar depois que o estoque já foi reservado?", owner_layer: L2 }
+  - { id: FAQ-03, q: "como o comprador recupera um carrinho abandonado sem perder o que já escolheu?", owner_layer: L4 }
+  - { id: FAQ-04, q: "como o sistema evita reservar estoque duas vezes para o mesmo item?", owner_layer: L3 }
+
+non_goals:
+  - { id: NG-01, statement: "não gerencia estoque físico/armazém — integra com o sistema de estoque do lojista, não o substitui" }
+  - { id: NG-02, statement: "não processa marketplace multi-vendedor no MVP — uma loja, um catálogo" }

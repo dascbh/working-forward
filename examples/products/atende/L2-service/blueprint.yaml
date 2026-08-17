@@ -1,0 +1,81 @@
+# Atende — L2 blueprint.yaml
+blueprints:
+  - moment_ref: MOM-02
+    frontstage:
+      - "resposta do bot, sempre com a fonte da base de conhecimento visível e clicável"
+    backstage:
+      - { id: BCK-01, action: "geração de resposta via RAG sobre a base de conhecimento da empresa", sla_ms: 3000 }
+      - { id: BCK-02, action: "cálculo de score de confiança da resposta antes de exibir" }
+    policies:
+      - id: POL-CONF-01
+        rule: "resposta com confiança abaixo do limiar não é exibida como definitiva — o bot oferece escalação em vez de arriscar"
+        source: TEN-01
+        on_violation: "resposta de baixa confiança é bloqueada; bot oferece escalação no lugar dela"
+    edge_cases:
+      - id: EDG-01
+        case: "bot gera resposta plausível mas não fundamentada na base de conhecimento (alucinação) — FAQ-02"
+        resolution: "toda resposta deve citar a fonte da base de conhecimento; sem fonte correspondente, a resposta não é exibida e o bot oferece escalação"
+        severity: alta
+      - id: EDG-02
+        case: "pergunta fora do escopo da base de conhecimento da empresa — FAQ-01"
+        resolution: "bot reconhece o limite e oferece escalação direta, sem tentar responder por aproximação"
+        severity: media
+
+  - moment_ref: MOM-03
+    frontstage:
+      - "botão 'falar com humano' sempre visível, sem precisar pedir mais de uma vez"
+    backstage:
+      - { id: BCK-03, action: "roteamento da conversa para a fila do atendente com o contexto anexado", sla_ms: 500 }
+    policies:
+      - id: POL-ESCALA-01
+        rule: "cliente pode escalar para humano a qualquer momento da conversa, sem barreira ou justificativa exigida"
+        source: NG-01
+        on_violation: "pedido de escalação nunca é negado ou adiado pelo bot"
+    edge_cases:
+      - id: EDG-03
+        case: "assunto sensível detectado (cancelamento de conta, reclamação jurídica) — NG-01"
+        resolution: "bot escala automaticamente sem esperar o cliente pedir, informando o motivo da escalação"
+        severity: alta
+      - id: EDG-04
+        case: "sinal de frustração do cliente (linguagem, repetição da mesma pergunta) — FAQ-03"
+        resolution: "bot oferece escalação proativa após 2 tentativas sem sucesso, mesmo sem pedido explícito do cliente"
+        severity: media
+      - id: EDG-05
+        case: "todos os atendentes humanos estão ocupados no momento da escalação"
+        resolution: "cliente entra na fila com posição e tempo estimado visíveis; o bot continua disponível para ajudar em paralelo, sem fingir que o problema foi resolvido"
+        severity: media
+
+  - moment_ref: MOM-10
+    frontstage:
+      - "painel do atendente com resumo da conversa, transcript completo e tentativas anteriores do bot"
+    backstage:
+      - { id: BCK-04, action: "montagem do resumo de contexto a partir do histórico da conversa e das tentativas do bot", sla_ms: 1000 }
+    policies:
+      - id: POL-CONTEXTO-01
+        rule: "toda escalação chega ao atendente com o histórico completo — cliente nunca é obrigado a se repetir"
+        source: TEN-02
+        on_violation: "escalação sem contexto anexado é bloqueada até o resumo ser montado"
+    edge_cases:
+      - id: EDG-06
+        case: "conversa muito longa (mais de 50 mensagens) antes da escalação"
+        resolution: "resumo automático dos pontos principais + link para o transcript completo, sem nunca omitir o histórico"
+        severity: baixa
+
+  - moment_ref: MOM-20
+    frontstage:
+      - "painel de revisão: conversas com confiança baixa ou escaladas, agrupadas por tema"
+    backstage:
+      - { id: BCK-05, action: "agrupamento de conversas de baixa confiança por similaridade temática", sla_ms: 5000 }
+    policies:
+      - id: POL-REVISAO-01
+        rule: "todo tema com volume relevante de baixa confiança é sinalizado para atualização da base de conhecimento"
+        source: PROB-01
+        on_violation: "tema fica pendente de revisão, nunca é descartado silenciosamente"
+    edge_cases:
+      - id: EDG-07
+        case: "volume de conversas de baixa confiança excede a capacidade de revisão do gestor numa semana"
+        accepted_risk:
+          owner: "PM"
+          date: "2026-08-17"
+          reason: "MVP prioriza sinalização completa sobre priorização automática; ranking por impacto fica para v2"
+        severity: baixa

@@ -1,0 +1,41 @@
+# Vitrine — L3 domain.yaml
+events:
+  - { id: EVT-ItemAdicionado,     aggregate: AGG-Carrinho, emitted_by: CMD-AdicionarItem }
+  - { id: EVT-EstoqueReservado,   aggregate: AGG-Estoque,  emitted_by: BCK-01 }
+  - { id: EVT-ReservaExpirada,    aggregate: AGG-Estoque,  emitted_by: BCK-06 }
+  - { id: EVT-PagamentoAprovado,  aggregate: AGG-Pedido,   emitted_by: BCK-03 }
+  - { id: EVT-PagamentoFalhou,    aggregate: AGG-Pedido,   emitted_by: BCK-03 }
+  - { id: EVT-PedidoConfirmado,   aggregate: AGG-Pedido,   emitted_by: BCK-04 }
+  - { id: EVT-CarrinhoAbandonado, aggregate: AGG-Carrinho, emitted_by: BCK-05 }
+  - { id: EVT-EstoqueLiberado,    aggregate: AGG-Estoque,  emitted_by: BCK-06 }
+
+commands:
+  - { id: CMD-AdicionarItem,     actor: ACT-COMPRADOR, produces: [EVT-ItemAdicionado] }
+  - { id: CMD-IniciarCheckout,   actor: ACT-COMPRADOR, produces: [EVT-EstoqueReservado] }
+  - { id: CMD-ProcessarPagamento, actor: system,         produces: [EVT-PagamentoAprovado, EVT-PagamentoFalhou] }
+  - { id: CMD-ConfirmarPedido,   actor: system,         produces: [EVT-PedidoConfirmado] }
+  - { id: CMD-EnviarLembrete,    actor: system,         produces: [] }
+  - { id: CMD-RetomarCheckout,   actor: ACT-COMPRADOR, produces: [] }
+  - { id: CMD-LiberarEstoque,    actor: system,         produces: [EVT-EstoqueLiberado] }
+  - { id: CMD-EstenderReserva,   actor: ACT-LOJISTA,   produces: [] }
+
+reactions:
+  - { id: RCT-01, when: EVT-PagamentoAprovado,  then: CMD-ConfirmarPedido, implements: POL-CONFIRMA-01 }
+  - { id: RCT-02, when: EVT-CarrinhoAbandonado, then: CMD-EnviarLembrete,  implements: POL-LEMBRETE-01 }
+  - { id: RCT-03, when: EVT-ReservaExpirada,    then: CMD-LiberarEstoque, implements: POL-LIBERA-01 }
+
+aggregates:
+  - { id: AGG-Carrinho, invariants: [POL-RETOMAR-01] }
+  - id: AGG-Estoque
+    invariants: [POL-ESTOQUE-01, POL-LIBERA-01]
+    note: "invariante de reserva única por unidade de estoque — nunca duas reservas ativas para a mesma unidade — resposta estrutural a FAQ-04"
+  - { id: AGG-Pedido, invariants: [POL-CONFIRMA-01] }
+
+contexts:
+  - id: CTX-Compra
+    aggregates: [AGG-Carrinho, AGG-Pedido]
+    moments_served: [MOM-01, MOM-02, MOM-03, MOM-10, MOM-11]
+  - id: CTX-Estoque
+    aggregates: [AGG-Estoque]
+    moments_served: [MOM-20, MOM-21]
+    relationship: { with: CTX-Compra, type: upstream-published-language }

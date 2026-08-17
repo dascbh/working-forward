@@ -1,0 +1,71 @@
+# Atende — L1 journey.yaml
+actors:
+  - { id: ACT-CLIENTE, name: "Cliente final", persona_ref: CUST-CLIENTE }
+  - { id: ACT-ATENDENTE, name: "Atendente humano" }   # recebe as escalações; não é a persona compradora do produto
+  - { id: ACT-GESTOR, name: "Gestor de atendimento", persona_ref: CUST-CS }
+
+journeys:
+  - id: JRN-CONVERSAR
+    actor: ACT-CLIENTE
+    trigger: "cliente abre o chat com uma dúvida ou problema"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Iniciar a conversa"
+        intent: "descrever o problema e ser entendido rápido"
+        emotion_target: acolhimento
+        channel: [web, app]
+        truth_moment: false
+      - id: MOM-02
+        name: "Receber resposta do bot"
+        intent: "obter solução sem esperar atendimento humano"
+        emotion_target: alívio
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [PROB-01]
+      - id: MOM-03
+        name: "Escalar para humano quando necessário"
+        intent: "não ficar preso em loop sem solução"
+        emotion_target: confiança
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [PROB-02, TEN-01]
+
+  - id: JRN-ATENDER
+    actor: ACT-ATENDENTE
+    trigger: "conversa escalada chega na fila do atendente humano"
+    shape: loop        # atendente processa múltiplas escalações continuamente
+    moments:
+      - id: MOM-10
+        name: "Receber a escalação com contexto completo"
+        intent: "não pedir ao cliente para repetir o que já disse"
+        emotion_target: eficiência
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-02, FAQ-04]
+      - id: MOM-11
+        name: "Resolver e fechar o ticket"
+        intent: "concluir o atendimento e registrar a resolução"
+        emotion_target: realização
+        channel: [web]
+        truth_moment: false
+
+  - id: JRN-MELHORAR
+    actor: ACT-GESTOR
+    trigger: "gestor revisa o desempenho do bot periodicamente"
+    shape: loop
+    moments:
+      - id: MOM-20
+        name: "Revisar conversas com baixa confiança"
+        intent: "identificar lacunas de conhecimento do bot"
+        emotion_target: controle
+        channel: [web]
+        truth_moment: true
+        vision_refs: [FAQ-02]
+      - id: MOM-21
+        name: "Atualizar a base de conhecimento"
+        intent: "ensinar o bot a responder o que hoje escala sem necessidade"
+        emotion_target: progresso
+        channel: [web]
+        truth_moment: false
+        vision_refs: [PROB-01]

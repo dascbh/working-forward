@@ -1,0 +1,40 @@
+# Atende — L3 domain.yaml
+events:
+  - { id: EVT-ConversaIniciada,  aggregate: AGG-Conversa,         emitted_by: CMD-IniciarConversa }
+  - { id: EVT-RespostaGerada,    aggregate: AGG-Conversa,         emitted_by: BCK-01 }
+  - { id: EVT-RespostaBloqueada, aggregate: AGG-Conversa,         emitted_by: BCK-02 }
+  - { id: EVT-ConversaEscalada,  aggregate: AGG-Conversa,         emitted_by: BCK-03 }
+  - { id: EVT-TicketResolvido,   aggregate: AGG-Conversa,         emitted_by: CMD-ResolverTicket }
+  - { id: EVT-TemaSinalizado,    aggregate: AGG-BaseConhecimento, emitted_by: BCK-05 }
+  - { id: EVT-BaseAtualizada,    aggregate: AGG-BaseConhecimento, emitted_by: CMD-AtualizarBase }
+
+commands:
+  - { id: CMD-IniciarConversa,     actor: ACT-CLIENTE,   produces: [EVT-ConversaIniciada] }
+  - { id: CMD-GerarResposta,       actor: system,          produces: [EVT-RespostaGerada, EVT-RespostaBloqueada] }
+  - { id: CMD-SolicitarEscalacao,  actor: ACT-CLIENTE,   produces: [] }
+  - { id: CMD-OferecerEscalacao,   actor: system,          produces: [] }
+  - { id: CMD-MontarContexto,      actor: system,          produces: [] }
+  - { id: CMD-ResolverTicket,      actor: ACT-ATENDENTE, produces: [EVT-TicketResolvido] }
+  - { id: CMD-SinalizarTema,       actor: system,          produces: [EVT-TemaSinalizado] }
+  - { id: CMD-AtualizarBase,       actor: ACT-GESTOR,    produces: [EVT-BaseAtualizada] }
+
+reactions:
+  - { id: RCT-01, when: EVT-ConversaIniciada,  then: CMD-GerarResposta,      implements: POL-CONF-01 }
+  - { id: RCT-02, when: EVT-RespostaBloqueada, then: CMD-OferecerEscalacao,  implements: POL-CONF-01 }
+  - { id: RCT-03, when: EVT-RespostaBloqueada, then: CMD-SinalizarTema,      implements: POL-REVISAO-01 }
+  - { id: RCT-04, when: EVT-ConversaEscalada,  then: CMD-MontarContexto,     implements: POL-CONTEXTO-01 }
+
+aggregates:
+  - id: AGG-Conversa
+    invariants: [POL-CONF-01, POL-ESCALA-01, POL-CONTEXTO-01]
+    note: "histórico completo da conversa anexado a toda escalação — resposta estrutural a FAQ-04"
+  - { id: AGG-BaseConhecimento, invariants: [POL-REVISAO-01] }
+
+contexts:
+  - id: CTX-Atendimento
+    aggregates: [AGG-Conversa]
+    moments_served: [MOM-01, MOM-02, MOM-03, MOM-10, MOM-11]
+  - id: CTX-Conhecimento
+    aggregates: [AGG-BaseConhecimento]
+    moments_served: [MOM-20, MOM-21]
+    relationship: { with: CTX-Atendimento, type: downstream-conformist }

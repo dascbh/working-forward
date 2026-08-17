@@ -1,0 +1,43 @@
+# Atende — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: atende
+customer:
+  primary:
+    id: CUST-CS
+    who: "gerente de atendimento ao cliente em e-commerce ou SaaS de médio porte"
+    context: "precisa absorver o crescimento do volume de tickets sem contratar na mesma proporção"
+  secondary:
+    - id: CUST-CLIENTE
+      who: "cliente final que busca suporte"
+      context: "quer resposta rápida, sem esperar fila humana e sem ficar preso em respostas robóticas"
+
+problem:
+  - id: PROB-01
+    statement: "volume de tickets cresce mais rápido do que o time de atendimento consegue contratar, gerando fila e queda de satisfação"
+    severity: alta
+    evidence: "benchmark com 8 times de CS: crescimento médio de 40% no volume anual contra 12% no headcount"
+  - id: PROB-02
+    statement: "cliente abandona o chat quando percebe que está preso em respostas robóticas que não resolvem, sem saída fácil para humano"
+    severity: alta
+    evidence: "pesquisa com 500 usuários de chatbots de atendimento: 61% já desistiram de resolver um problema por não achar como falar com humano"
+
+solution_one_liner: "Atendimento por IA que resolve o que sabe resolver bem, e escala para humano no momento certo — nunca prende o cliente num loop sem saída."
+
+tenets:
+  - id: TEN-01
+    rule: "o bot nunca finge saber — quando a confiança da resposta é baixa, escala em vez de arriscar"
+  - id: TEN-02
+    rule: "toda escalação preserva o contexto da conversa — cliente nunca repete o que já disse"
+
+north_star:
+  metric: "tickets resolvidos sem escalação humana"
+  target: "60% em 6 meses"
+
+hard_questions:
+  - { id: FAQ-01, q: "o que acontece quando o bot não sabe responder?", owner_layer: L2 }
+  - { id: FAQ-02, q: "como o bot evita dar informação errada com confiança (alucinação)?", owner_layer: L2 }
+  - { id: FAQ-03, q: "e se o cliente ficar frustrado no meio da conversa?", owner_layer: L4 }
+  - { id: FAQ-04, q: "como o histórico da conversa é preservado quando escala para humano?", owner_layer: L3 }
+
+non_goals:
+  - { id: NG-01, statement: "não substitui atendimento humano em casos sensíveis (cancelamento de conta, reclamação jurídica) — sempre escala" }
+  - { id: NG-02, statement: "não opera fora dos canais integrados pela empresa — não é chatbot genérico de redes sociais não conectadas" }

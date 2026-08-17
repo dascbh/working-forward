@@ -34,7 +34,9 @@ examples/artifacts/          Exemplos mínimos comentados, por camada
 examples/products/           Pseudo-produtos completos, L0→L5
   ├── aurora-tax/            B2B — plataforma de inteligência tributária
   ├── agendai/               B2C — agendamento para barbearias
-  └── ponte/                 infraestrutura crítica — coordenação de resposta a crises em tempo real
+  ├── ponte/                 infraestrutura crítica — coordenação de resposta a crises em tempo real
+  ├── atende/                IA — chatbot de atendimento com escalação para humano
+  └── vitrine/               e-commerce — loja virtual com checkout e reserva de estoque
 ```
 
 ## Quickstart

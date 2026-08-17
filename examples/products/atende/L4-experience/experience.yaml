@@ -1,0 +1,108 @@
+# Atende — L4 experience.yaml
+flows:
+  - id: FLW-CONVERSAR
+    serves: [MOM-01, MOM-02, MOM-03]
+    initial: iniciando
+    states:
+      iniciando:
+        screen: SCR-CHAT
+        on:
+          ENVIAR_MENSAGEM: { target: gerando, guard: VAL-MENSAGEM-01 }
+      gerando:
+        screen: SCR-CHAT
+        invoke: CMD-GerarResposta
+        on:
+          EVT-RespostaGerada:    { target: respondido }
+          EVT-RespostaBloqueada: { target: oferecendo_escalacao, covers: [EDG-01, EDG-02] }
+      respondido:
+        screen: SCR-CHAT
+        must_render: [resposta_com_fonte]
+        on:
+          ENVIAR_MENSAGEM:  { target: gerando, guard: VAL-MENSAGEM-01 }
+          PEDIR_HUMANO:     { target: escalando }
+          SINAL_FRUSTRACAO: { target: oferecendo_escalacao, covers: [EDG-04] }
+          ASSUNTO_SENSIVEL: { target: escalando, covers: [EDG-03] }
+      oferecendo_escalacao:
+        screen: SCR-CHAT
+        covers: [EDG-01, EDG-02, EDG-04]
+        answers: [FAQ-01, FAQ-02, FAQ-03]
+        must_render: [oferta_escalacao_explicita]
+        on:
+          PEDIR_HUMANO:      { target: escalando }
+          CONTINUAR_COM_BOT: { target: iniciando }
+      escalando:
+        screen: SCR-CHAT
+        invoke: CMD-SolicitarEscalacao
+        on:
+          EVT-ConversaEscalada: { target: na_fila }
+      na_fila:
+        screen: SCR-FILA
+        covers: [EDG-05]
+        must_render: [posicao_na_fila, tempo_estimado]
+        on:
+          EVT-TicketResolvido: { target: encerrado }
+      encerrado:
+        screen: SCR-CHAT
+        must_render: [resumo_atendimento]
+
+  - id: FLW-ATENDER
+    serves: [MOM-10, MOM-11]
+    initial: recebendo
+    states:
+      recebendo:
+        screen: SCR-PAINEL-ATENDENTE
+        invoke: CMD-MontarContexto
+        covers: [EDG-06]
+        must_render: [resumo_contexto, transcript_completo]
+        on:
+          ASSUMIR: { target: atendendo }
+      atendendo:
+        screen: SCR-PAINEL-ATENDENTE
+        on:
+          RESOLVER: { target: resolvendo }
+      resolvendo:
+        screen: SCR-PAINEL-ATENDENTE
+        invoke: CMD-ResolverTicket
+        on:
+          EVT-TicketResolvido: { target: resolvido }
+      resolvido:
+        screen: SCR-PAINEL-ATENDENTE
+        must_render: [ticket_fechado]
+
+  - id: FLW-MELHORAR
+    serves: [MOM-20, MOM-21]
+    initial: revisando
+    states:
+      revisando:
+        screen: SCR-REVISAO
+        covers: [EDG-07]
+        must_render: [temas_agrupados_por_confianca_baixa]
+        on:
+          EVT-TemaSinalizado: { target: revisando }
+          EDITAR_BASE:        { target: editando }
+      editando:
+        screen: SCR-EDITOR-BASE
+        on:
+          PUBLICAR: { target: publicando, guard: VAL-BASE-01 }
+      publicando:
+        screen: SCR-EDITOR-BASE
+        invoke: CMD-AtualizarBase
+        on:
+          EVT-BaseAtualizada: { target: revisando }
+
+validations:
+  - id: VAL-MENSAGEM-01
+    field: mensagem.texto
+    rule: "não vazia, ≤ 2000 caracteres — mensagem vazia não pode ser avaliada por confiança"
+    derived_from: POL-CONF-01
+  - id: VAL-BASE-01
+    field: base_conhecimento.entrada
+    rule: "entrada deve citar fonte e ficar associada a pelo menos um tema sinalizado antes de publicar"
+    derived_from: POL-REVISAO-01
+
+screens:
+  - { id: SCR-CHAT,             components: [bolha-mensagem, citacao-fonte, cta-falar-com-humano], tokens_scope: "atendimento.*" }
+  - { id: SCR-FILA,             components: [posicao-fila, tempo-estimado], tokens_scope: "atendimento.*" }
+  - { id: SCR-PAINEL-ATENDENTE, components: [resumo-contexto, transcript, acoes-ticket], tokens_scope: "atendimento.*" }
+  - { id: SCR-REVISAO,          components: [lista-temas, badge-confianca-baixa], tokens_scope: "conhecimento.*" }
+  - { id: SCR-EDITOR-BASE,      components: [editor-entrada, seletor-tema], tokens_scope: "conhecimento.*" }

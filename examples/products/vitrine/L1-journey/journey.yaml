@@ -1,0 +1,70 @@
+# Vitrine — L1 journey.yaml
+actors:
+  - { id: ACT-COMPRADOR, name: "Comprador", persona_ref: CUST-COMPRADOR }
+  - { id: ACT-LOJISTA, name: "Lojista", persona_ref: CUST-LOJISTA }
+
+journeys:
+  - id: JRN-COMPRAR
+    actor: ACT-COMPRADOR
+    trigger: "comprador encontra um produto que quer"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Adicionar ao carrinho"
+        intent: "reservar o interesse sem compromisso"
+        emotion_target: entusiasmo
+        channel: [web, app]
+        truth_moment: false
+      - id: MOM-02
+        name: "Finalizar o checkout"
+        intent: "pagar rápido, sem re-digitar dados"
+        emotion_target: confiança
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [PROB-01, TEN-02]
+      - id: MOM-03
+        name: "Confirmar o pedido"
+        intent: "saber que a compra foi concluída e vai chegar"
+        emotion_target: alívio
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [PROB-02, TEN-01]
+
+  - id: JRN-RECUPERAR
+    actor: ACT-COMPRADOR
+    trigger: "comprador abandona o checkout antes de concluir"
+    shape: linear
+    moments:
+      - id: MOM-10
+        name: "Ser lembrado do carrinho"
+        intent: "voltar de onde parou sem re-selecionar tudo"
+        emotion_target: conveniência
+        channel: [email, push]
+        truth_moment: true
+        vision_refs: [FAQ-03]
+      - id: MOM-11
+        name: "Retomar o checkout"
+        intent: "concluir a compra sem fricção adicional"
+        emotion_target: confiança
+        channel: [web, app]
+        truth_moment: false
+
+  - id: JRN-GERENCIAR
+    actor: ACT-LOJISTA
+    trigger: "lojista acompanha vendas e estoque no dia a dia"
+    shape: loop
+    moments:
+      - id: MOM-20
+        name: "Acompanhar pedidos e rupturas em tempo real"
+        intent: "saber o que vendeu e o que está acabando antes que vire problema"
+        emotion_target: controle
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-02]
+      - id: MOM-21
+        name: "Tratar um pedido com falha de pagamento"
+        intent: "decidir se libera o estoque reservado ou aguarda nova tentativa"
+        emotion_target: segurança
+        channel: [web]
+        truth_moment: false
+        vision_refs: [FAQ-02]

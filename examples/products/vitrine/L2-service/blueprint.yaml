@@ -1,0 +1,93 @@
+# Vitrine — L2 blueprint.yaml
+blueprints:
+  - moment_ref: MOM-01
+    frontstage:
+      - "contador de estoque sutil quando baixo ('só 2 restantes')"
+    backstage:
+      - { id: BCK-01, action: "verificação de disponibilidade em tempo real antes de confirmar a adição ao carrinho", sla_ms: 300 }
+    policies:
+      - id: POL-ESTOQUE-01
+        rule: "item só é exibido como disponível se o estoque real, descontando reservas ativas, for maior que zero"
+        source: TEN-01
+        on_violation: "item é removido da vitrine imediatamente quando o estoque zera"
+    edge_cases:
+      - id: EDG-01
+        case: "dois compradores adicionam a última unidade ao carrinho quase simultaneamente — FAQ-01"
+        resolution: "o carrinho reserva o item por tempo limitado (10 minutos); o segundo comprador vê 'reservado por outro comprador, expira em Xmin' e pode aguardar ou escolher alternativa"
+        severity: alta
+
+  - moment_ref: MOM-02
+    frontstage:
+      - "checkout de uma página, dados pré-preenchidos quando disponíveis, múltiplos métodos de pagamento"
+    backstage:
+      - { id: BCK-02, action: "confirmação da reserva de estoque no início do checkout, com contagem regressiva", sla_ms: 500 }
+      - { id: BCK-03, action: "processamento do pagamento junto ao gateway", sla_ms: 5000 }
+    policies:
+      - id: POL-RETOMAR-01
+        rule: "dados preenchidos no checkout nunca são perdidos entre tentativas — falha de pagamento retoma com tudo preenchido"
+        source: TEN-02
+        on_violation: "comprador reinicia do zero apenas se abandonar voluntariamente"
+    edge_cases:
+      - id: EDG-02
+        case: "pagamento falha depois que o estoque já foi reservado — FAQ-02"
+        resolution: "o estoque permanece reservado pelo tempo restante da janela; o comprador pode tentar outro método de pagamento sem perder a reserva nem os dados preenchidos"
+        severity: alta
+      - id: EDG-03
+        case: "a janela de reserva expira durante o preenchimento do checkout"
+        resolution: "o comprador é avisado antes de expirar (1 minuto antes do fim) e pode estender uma vez, se o estoque ainda permitir"
+        severity: media
+
+  - moment_ref: MOM-03
+    frontstage:
+      - "confirmação com número do pedido e prazo estimado de entrega"
+    backstage:
+      - { id: BCK-04, action: "baixa definitiva do estoque reservado e emissão do pedido", sla_ms: 1000 }
+    policies:
+      - id: POL-CONFIRMA-01
+        rule: "pedido só é confirmado após pagamento aprovado — nunca por reserva de estoque isolada"
+        source: TEN-01
+        on_violation: "confirmação sem pagamento aprovado é bloqueada no sistema"
+    edge_cases:
+      - id: EDG-04
+        case: "gateway de pagamento demora a confirmar (pagamento assíncrono, ex: PIX ou boleto)"
+        resolution: "pedido fica 'aguardando pagamento' com estoque reservado até o prazo do método; comprador recebe confirmação assim que o pagamento compensar"
+        severity: media
+
+  - moment_ref: MOM-10
+    frontstage:
+      - "notificação (email/push) com os itens do carrinho e link direto de retomada"
+    backstage:
+      - { id: BCK-05, action: "identificação de carrinho abandonado após período de inatividade" }
+    policies:
+      - id: POL-LEMBRETE-01
+        rule: "lembrete de carrinho respeita a preferência de comunicação do comprador — nunca envia sem consentimento"
+        source: PROB-01
+        on_violation: "comprador que optou por não receber lembrete não é notificado"
+    edge_cases:
+      - id: EDG-05
+        case: "item do carrinho abandonado ficou indisponível antes do lembrete ser enviado"
+        resolution: "o lembrete mostra o item como indisponível com alternativa sugerida, nunca convida a retomar um checkout que vai falhar"
+        severity: media
+
+  - moment_ref: MOM-21
+    frontstage:
+      - "painel de pedidos pendentes com ação de um toque: liberar estoque ou aguardar"
+    backstage:
+      - { id: BCK-06, action: "liberação do estoque reservado ao expirar a janela sem pagamento confirmado" }
+    policies:
+      - id: POL-LIBERA-01
+        rule: "estoque reservado sem pagamento confirmado é liberado automaticamente ao fim da janela — nunca fica preso indefinidamente"
+        source: TEN-01
+        on_violation: "reserva expirada bloqueia o item para outros compradores até ser corrigida manualmente"
+    edge_cases:
+      - id: EDG-06
+        case: "lojista quer estender a reserva manualmente para um cliente específico (ex: pagamento em análise por fraude)"
+        resolution: "lojista pode estender a janela manualmente por pedido, com motivo registrado; a extensão nunca é automática"
+        severity: baixa
+      - id: EDG-07
+        case: "volume de pedidos com falha de pagamento em pico de tráfego (ex: black friday) sobrecarrega a fila de liberação"
+        accepted_risk:
+          owner: "PM"
+          date: "2026-08-17"
+          reason: "MVP processa liberação em lote a cada 5 minutos; liberação instantânea em escala fica para v2"
+        severity: baixa

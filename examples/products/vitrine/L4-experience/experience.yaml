@@ -1,0 +1,118 @@
+# Vitrine — L4 experience.yaml
+flows:
+  - id: FLW-COMPRAR
+    serves: [MOM-01, MOM-02, MOM-03]
+    initial: navegando
+    states:
+      navegando:
+        screen: SCR-VITRINE
+        on:
+          ADICIONAR: { target: adicionando }
+      adicionando:
+        screen: SCR-VITRINE
+        invoke: CMD-AdicionarItem
+        on:
+          EVT-ItemAdicionado: { target: no_carrinho }
+      no_carrinho:
+        screen: SCR-CARRINHO
+        on:
+          IR_PARA_CHECKOUT: { target: reservando }
+      reservando:
+        screen: SCR-CHECKOUT
+        invoke: CMD-IniciarCheckout
+        on:
+          EVT-EstoqueReservado:  { target: preenchendo }
+          RESERVA_INDISPONIVEL: { target: item_indisponivel, covers: [EDG-01] }
+      item_indisponivel:
+        screen: SCR-CHECKOUT
+        covers: [EDG-01]
+        must_render: [aviso_reservado_por_outro, alternativa_sugerida]
+      preenchendo:
+        screen: SCR-CHECKOUT
+        must_render: [contagem_regressiva_reserva]
+        on:
+          PAGAR: { target: processando_pagamento, guard: VAL-CHECKOUT-01 }
+          RESERVA_QUASE_EXPIRA: { target: preenchendo, covers: [EDG-03] }
+      processando_pagamento:
+        screen: SCR-CHECKOUT
+        invoke: CMD-ProcessarPagamento
+        on:
+          EVT-PagamentoAprovado: { target: confirmando }
+          EVT-PagamentoFalhou:   { target: pagamento_falhou, covers: [EDG-02] }
+          PAGAMENTO_ASSINCRONO:  { target: aguardando_pagamento, covers: [EDG-04] }
+      pagamento_falhou:
+        screen: SCR-CHECKOUT
+        covers: [EDG-02]
+        must_render: [dados_preenchidos_preservados, outro_metodo_pagamento]
+        on:
+          PAGAR: { target: processando_pagamento, guard: VAL-CHECKOUT-01 }
+      aguardando_pagamento:
+        screen: SCR-CHECKOUT
+        covers: [EDG-04]
+        must_render: [instrucoes_pix_boleto, estoque_reservado_ate]
+        on:
+          EVT-PagamentoAprovado: { target: confirmando }
+      confirmando:
+        screen: SCR-CONFIRMACAO
+        invoke: CMD-ConfirmarPedido
+        on:
+          EVT-PedidoConfirmado: { target: confirmado }
+      confirmado:
+        screen: SCR-CONFIRMACAO
+        must_render: [numero_pedido, prazo_entrega]
+
+  - id: FLW-RECUPERAR
+    serves: [MOM-10, MOM-11]
+    initial: monitorando
+    states:
+      monitorando:
+        screen: SCR-LEMBRETE
+        on:
+          EVT-CarrinhoAbandonado: { target: lembrando }
+      lembrando:
+        screen: SCR-LEMBRETE
+        invoke: CMD-EnviarLembrete
+        covers: [EDG-05]
+        answers: [FAQ-03]
+        must_render: [itens_do_carrinho, alternativa_se_indisponivel]
+        on:
+          RETOMAR: { target: retomando }
+      retomando:
+        screen: SCR-CHECKOUT
+        invoke: CMD-RetomarCheckout
+        must_render: [checkout_pre_preenchido]
+
+  - id: FLW-GERENCIAR
+    serves: [MOM-20, MOM-21]
+    initial: acompanhando
+    states:
+      acompanhando:
+        screen: SCR-PAINEL-LOJISTA
+        must_render: [pedidos_em_tempo_real, alertas_ruptura]
+        on:
+          EVT-EstoqueLiberado:     { target: acompanhando }
+          ABRIR_PEDIDO_PENDENTE:   { target: tratando_pendencia }
+      tratando_pendencia:
+        screen: SCR-PEDIDO-DETALHE
+        on:
+          ESTENDER:            { target: acompanhando, guard: VAL-EXTENSAO-01 }
+          AGUARDAR_LIBERACAO:  { target: acompanhando }
+
+validations:
+  - id: VAL-CHECKOUT-01
+    field: checkout.metodo_pagamento
+    rule: "método de pagamento selecionado e válido antes de submeter"
+    derived_from: POL-RETOMAR-01
+  - id: VAL-EXTENSAO-01
+    field: extensao.motivo
+    rule: "motivo obrigatório para estender a reserva manualmente"
+    derived_from: EDG-06
+
+screens:
+  - { id: SCR-VITRINE,        components: [card-produto, badge-estoque-baixo], tokens_scope: "compra.*" }
+  - { id: SCR-CARRINHO,       components: [lista-itens, resumo-valores], tokens_scope: "compra.*" }
+  - { id: SCR-CHECKOUT,       components: [form-endereco, seletor-pagamento, contagem-reserva], tokens_scope: "compra.*" }
+  - { id: SCR-CONFIRMACAO,    components: [numero-pedido-card, prazo-entrega-badge], tokens_scope: "compra.*" }
+  - { id: SCR-LEMBRETE,       components: [itens-carrinho-card, cta-retomar], tokens_scope: "compra.*" }
+  - { id: SCR-PAINEL-LOJISTA, components: [lista-pedidos, alerta-ruptura-badge], tokens_scope: "estoque.*" }
+  - { id: SCR-PEDIDO-DETALHE, components: [detalhe-pedido-card, cta-estender-reserva], tokens_scope: "estoque.*" }
