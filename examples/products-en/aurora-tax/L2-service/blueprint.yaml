@@ -1,0 +1,71 @@
+# Aurora Tax — L2 blueprint.yaml
+blueprints:
+  - moment_ref: MOM-01
+    frontstage:
+      - "query editor with framing suggestions (operation type, tax, period)"
+    backstage:
+      - { id: BCK-01, action: "preliminary classification of the query by topic/provision", sla_ms: 2000 }
+    policies:
+      - id: POL-ESC-01
+        rule: "a query outside tax scope is declined at intake, with a redirect"
+        source: TEN-02
+        on_violation: "query does not enter the queue; user receives a decline with a reason"
+    edge_cases:
+      - id: EDG-06
+        case: "question outside tax scope (e.g. request for a procedural document)"
+        resolution: "decline with a redirect, citing NG-01; offer to rephrase"
+        severity: media
+
+  - moment_ref: MOM-03
+    frontstage:
+      - "answer shown with clickable citations per regulatory provision"
+      - "per-citation verification badge (verified / with caveat)"
+    backstage:
+      - { id: BCK-11, action: "RAG over the LC 214/2025 base + infralegal acts", sla_ms: 8000 }
+      - { id: BCK-12, action: "each citation validated against the primary source" }
+    policies:
+      - id: POL-CIT-01
+        rule: "every regulatory claim MUST cite a provision verified against the primary source"
+        source: TEN-01
+        on_violation: "answer is blocked and reformulated before being shown"
+      - id: POL-CONF-01
+        rule: "a conflict between regulations shows both + the resolution criterion (hierarchy/chronology/specificity)"
+        source: FAQ-07
+        on_violation: "the answer cannot omit the conflicting regulation"
+    edge_cases:
+      - id: EDG-05
+        case: "outdated regulatory base (regulation published <24h ago) — FAQ-11"
+        resolution: "answer with an explicit currency caveat + schedule priority reindexing"
+        severity: alta
+      - id: EDG-07
+        case: "RAG exceeds the 8s SLA"
+        resolution: "degraded mode: partial answer with a notice + notification when complete"
+        severity: media
+      - id: EDG-08
+        case: "no provision found to substantiate the answer"
+        resolution: "declare inability to substantiate and escalate for human review"
+        severity: alta
+
+  - moment_ref: MOM-10
+    frontstage:
+      - "daily radar: list of new/amended regulations with estimated impact per client"
+    backstage:
+      - { id: BCK-21, action: "daily ingestion of official sources (DOU, governing committee)", sla_ms: 0 }
+      - { id: BCK-22, action: "matching regulation → potentially impacted clients" }
+    policies:
+      - id: POL-RAD-01
+        rule: "a regulation with no impact classification within 24h is shown as 'pending analysis,' never dropped"
+        source: PROB-01
+        on_violation: "the regulation is shown with a pending flag"
+    edge_cases:
+      - id: EDG-21
+        case: "official source unavailable during the ingestion window"
+        resolution: "retry with backoff + partial-coverage banner on the day's radar"
+        severity: media
+      - id: EDG-22
+        case: "atypical volume (>200 regulations in a day, e.g. a regulatory package)"
+        accepted_risk:
+          owner: "PM"
+          date: "2026-08-01"
+          reason: "rare; handle in v2 with relevance-based prioritization — accepted risk for MVP"
+        severity: baixa

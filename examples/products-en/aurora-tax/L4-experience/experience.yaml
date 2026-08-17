@@ -1,0 +1,102 @@
+# Aurora Tax — L4 experience.yaml
+flows:
+  - id: FLW-CONSULTA
+    serves: [MOM-01, MOM-02, MOM-03, MOM-04]
+    initial: composing
+    states:
+      composing:
+        screen: SCR-EDITOR
+        "on":
+          SUBMIT:
+            target: processing
+            guard: VAL-INPUT-01
+          EVT-ConsultaRecusada:
+            target: declined
+            covers: [EDG-06]
+      declined:
+        screen: SCR-RECUSA
+        covers: [EDG-06]
+        answers: [FAQ-13, NG-01]   # a graceful decline IS the answer to the hard question
+        must_render: [decline_reason, revise_link]   # FAQ-13: graceful decline, NG-01 made explicit
+        "on":
+          REVISE: { target: composing }
+      processing:
+        screen: SCR-AGUARDE
+        invoke: CMD-SubmeterConsulta
+        must_render: [progress_indicator]
+        "on":
+          EVT-ConsultaRespondida: { target: answered }
+          EVT-CitacaoInvalidada:  { target: reformulating }
+          EVT-RespostaDegradada:  { target: degraded, covers: [EDG-07] }
+          NO_BASIS_FOUND:         { target: escalated, covers: [EDG-08] }
+      reformulating:
+        screen: SCR-AGUARDE
+        must_render: [reverification_notice]
+        "on":
+          EVT-ConsultaRespondida: { target: answered }
+      degraded:
+        screen: SCR-RESPOSTA-PARCIAL
+        covers: [EDG-07]
+        must_render: [partial_notice, notify_when_complete]
+        "on":
+          EVT-ConsultaRespondida: { target: answered }
+      escalated:
+        screen: SCR-ESCALADA
+        covers: [EDG-08]
+        must_render: [no_basis_explanation, human_review_deadline]
+      answered:
+        screen: SCR-RESPOSTA
+        covers: [EDG-05]           # currency caveat rendered when regulation <24h old
+        must_render: [clickable_citations, verification_badge, currency_caveat_when_applicable]
+        "on":
+          AUDIT_CITATION: { target: auditing }
+      auditing:
+        screen: SCR-FONTE
+        must_render: [primary_source_text, highlighted_provision]
+
+  - id: FLW-RADAR
+    serves: [MOM-10, MOM-11]
+    initial: radar
+    states:
+      radar:
+        screen: SCR-RADAR
+        must_render: [todays_regulations, impact_by_client, pending_analysis]
+        # pending_analysis implements POL-RAD-01
+        "on":
+          PARTIAL_COVERAGE: { target: radar_partial, covers: [EDG-21] }
+          OPEN_REGULATION:  { target: regulation_detail }
+      radar_partial:
+        screen: SCR-RADAR
+        covers: [EDG-21]
+        must_render: [partial_coverage_banner]
+        "on":
+          OPEN_REGULATION: { target: regulation_detail }
+      regulation_detail:
+        screen: SCR-NORMA
+        "on":
+          FORWARD: { target: forwarded, guard: VAL-RESP-01 }
+      forwarded:
+        screen: SCR-CONFIRMACAO
+        invoke: CMD-NotificarResponsavel
+
+validations:
+  - id: VAL-INPUT-01
+    field: consulta.texto
+    rule: "non-empty, ≤ 4000 chars, tax topic detected"
+    derived_from: EDG-06
+  - id: VAL-RESP-01
+    field: encaminhamento.responsavel
+    rule: "owner is required and active on the client's account"
+    derived_from: POL-RAD-01
+
+screens:
+  - { id: SCR-EDITOR,           components: [query-editor, framing-suggestion], tokens_scope: "consulta.*" }
+  - { id: SCR-RECUSA,           components: [decline-card, cta-revise], tokens_scope: "consulta.*" }
+  - { id: SCR-AGUARDE,          components: [progress, pipeline-steps], tokens_scope: "consulta.*" }
+  - { id: SCR-RESPOSTA,         components: [answer-card, citation-chip, verified-badge, feedback-bar], tokens_scope: "consulta.*" }
+  - { id: SCR-RESPOSTA-PARCIAL, components: [answer-card, partial-banner], tokens_scope: "consulta.*" }
+  - { id: SCR-ESCALADA,         components: [escalated-card, deadline-badge], tokens_scope: "consulta.*" }
+  - { id: SCR-FONTE,            components: [regulation-viewer, provision-highlight], tokens_scope: "fonte.*" }
+  - { id: SCR-RADAR,            components: [regulation-list, impact-badge, coverage-banner], tokens_scope: "radar.*" }
+  - { id: SCR-NORMA,            components: [regulation-detail, impacted-clients], tokens_scope: "radar.*" }
+  - { id: SCR-CONFIRMACAO,      components: [confirmation-card], tokens_scope: "radar.*" }

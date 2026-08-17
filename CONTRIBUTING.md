@@ -1,3 +1,5 @@
+> 🇺🇸 English version available: [`CONTRIBUTING.en.md`](CONTRIBUTING.en.md)
+
 # Contribuindo
 
 O Working Forward é um framework em v0.1 — o objetivo desta fase é validar as camadas, os schemas e as skills contra produtos reais.
@@ -14,4 +16,4 @@ O Working Forward é um framework em v0.1 — o objetivo desta fase é validar a
 - IDs seguem o padrão `PREFIX-NOME` (ex: `POL-CIT-01`, `MOM-03`). Prefixos por tipo estão nos schemas.
 - Artefatos em YAML, specs em Markdown com referências `[ID]` inline.
 - PRs de exemplo devem passar `python tools/wf_lint.py <produto>` limpo (ou declarar `accepted_risk`).
-- Idioma: PT-BR é o idioma primário do projeto nesta fase; tradução EN está no roadmap.
+- Idioma: PT-BR é o idioma primário para conteúdo novo; os docs centrais e um exemplo completo (flagship) também estão disponíveis em inglês (README.en.md, CONTRIBUTING.en.md, docs/reference-guide.en.md, examples/products-en/aurora-tax/).

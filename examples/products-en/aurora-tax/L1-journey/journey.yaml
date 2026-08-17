@@ -1,0 +1,57 @@
+# Aurora Tax — L1 journey.yaml
+actors:
+  - { id: ACT-ADV, name: "Attorney", persona_ref: CUST-ADV }
+  - { id: ACT-EST, name: "Associate", persona_ref: CUST-EST }
+
+journeys:
+  - id: JRN-CONSULTA
+    actor: ACT-ADV
+    trigger: "client asks about IBS/CBS incidence on a specific operation"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Formulate the question"
+        intent: "translate the client's question into a precise technical query"
+        emotion_target: confidence
+        channel: [web]
+        truth_moment: false
+        vision_refs: [PROB-02]
+      - id: MOM-02
+        name: "Wait with visibility"
+        intent: "know the query is being processed and how much longer it will take"
+        emotion_target: calm
+        channel: [web]
+        truth_moment: false
+      - id: MOM-03
+        name: "Receive a substantiated answer"
+        intent: "get an answer with cited, verifiable regulatory basis"
+        emotion_target: relief
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-01, PROB-02, TEN-01]
+      - id: MOM-04
+        name: "Audit the substantiation"
+        intent: "click each citation and confirm the source before passing it to the client"
+        emotion_target: security
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-01]
+
+  - id: JRN-MONITOR
+    actor: ACT-EST
+    trigger: "start of the workday — check what changed in the regulatory landscape"
+    shape: loop
+    moments:
+      - id: MOM-10
+        name: "Review the day's radar"
+        intent: "see new/amended regulations relevant to the firm's clients"
+        emotion_target: control
+        channel: [web, email]
+        truth_moment: true
+        vision_refs: [PROB-01]
+      - id: MOM-11
+        name: "Forward impact to the owner"
+        intent: "flag the regulation as relevant and notify the attorney on the account"
+        emotion_target: efficiency
+        channel: [web]
+        truth_moment: false

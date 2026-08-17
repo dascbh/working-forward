@@ -1,3 +1,5 @@
+> 🇺🇸 English version available: [`README.en.md`](README.en.md)
+
 # Working Forward
 
 **Um framework de Product Engineering para a era dos agentes — da visão ao código, por camadas formais.**
@@ -14,7 +16,7 @@ A Amazon ensinou o mundo a trabalhar *de trás pra frente* até a visão (Workin
 ```
 L0  VISÃO         prfaq.md + vision.yaml        (Amazon — Working Backwards)
 L1  JORNADA       journey.yaml                  (Airbnb — storyboarding)
-L2  SERVIÇO       blueprint.yaml                (Uber — service blueprint)
+L2  SERVIÇO       blueprint.yaml                (service blueprint — Shostack, 1984)
 L3  DOMÍNIO       domain.yaml                   (DDD — EventStorming)
 L4  EXPERIÊNCIA   experience.yaml + tokens.json (design systems + statecharts)
 L5  ESPECIFICAÇÃO specs/*.md                    (EARS, derivado das camadas)

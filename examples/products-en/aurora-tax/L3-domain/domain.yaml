@@ -1,0 +1,54 @@
+# Aurora Tax — L3 domain.yaml
+events:
+  - { id: EVT-ConsultaSubmetida,    aggregate: AGG-Consulta, emitted_by: CMD-SubmeterConsulta }
+  - { id: EVT-ConsultaRecusada,     aggregate: AGG-Consulta, emitted_by: BCK-01 }
+  - { id: EVT-ConsultaRespondida,   aggregate: AGG-Consulta, emitted_by: BCK-11 }
+  - { id: EVT-CitacaoInvalidada,    aggregate: AGG-Consulta, emitted_by: BCK-12 }
+  - { id: EVT-RespostaDegradada,    aggregate: AGG-Consulta, emitted_by: BCK-11 }
+  - { id: EVT-NormaIngerida,        aggregate: AGG-Norma,    emitted_by: BCK-21 }
+  - { id: EVT-ImpactoClassificado,  aggregate: AGG-Norma,    emitted_by: BCK-22 }
+
+commands:
+  - { id: CMD-SubmeterConsulta,    actor: ACT-ADV, produces: [EVT-ConsultaSubmetida] }
+  - { id: CMD-ProcessarConsulta,   actor: system,  produces: [EVT-ConsultaRespondida, EVT-RespostaDegradada] }
+  - { id: CMD-ClassificarImpacto,  actor: system,  produces: [EVT-ImpactoClassificado] }
+  - { id: CMD-ReformularResposta,  actor: system,  produces: [EVT-ConsultaRespondida] }
+  - { id: CMD-EscalarRevisao,      actor: system,  produces: [] }
+  - { id: CMD-NotificarResponsavel, actor: ACT-EST, produces: [] }
+
+reactions:
+  - id: RCT-00
+    when: EVT-ConsultaSubmetida
+    then: CMD-ProcessarConsulta
+    implements: POL-CIT-01
+  - id: RCT-05
+    when: EVT-NormaIngerida
+    then: CMD-ClassificarImpacto
+    implements: POL-RAD-01
+  - id: RCT-01
+    when: EVT-CitacaoInvalidada
+    then: CMD-ReformularResposta
+    implements: POL-CIT-01
+  - id: RCT-02
+    when: EVT-RespostaDegradada
+    then: CMD-EscalarRevisao
+    implements: POL-CIT-01
+  - id: RCT-03
+    when: EVT-ImpactoClassificado
+    then: CMD-NotificarResponsavel
+    implements: POL-RAD-01
+
+aggregates:
+  - id: AGG-Consulta
+    invariants: [POL-CIT-01, POL-CONF-01, POL-ESC-01]
+  - id: AGG-Norma
+    invariants: [POL-RAD-01]
+
+contexts:
+  - id: CTX-Consultoria
+    aggregates: [AGG-Consulta]
+    moments_served: [MOM-01, MOM-02, MOM-03, MOM-04]
+  - id: CTX-Monitoramento
+    aggregates: [AGG-Norma]
+    moments_served: [MOM-10, MOM-11]
+    relationship: { with: CTX-Consultoria, type: upstream-published-language }

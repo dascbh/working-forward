@@ -1,0 +1,50 @@
+# Aurora Tax — L0 vision.yaml (extracted from prfaq.md, human-reviewed)
+product: aurora-tax
+customer:
+  primary:
+    id: CUST-ADV
+    who: "senior tax attorney at a mid/large-size law firm"
+    context: "handles corporate client queries about the IBS/CBS transition"
+  secondary:
+    - id: CUST-EST
+      who: "junior associate / intern"
+      context: "performs triage and preliminary research on queries"
+
+problem:
+  - id: PROB-01
+    statement: "manually monitoring 40+ regulations/week consumes hours of senior professionals' time"
+    severity: alta
+    evidence: "interviews with 6 tax attorneys; self-reported average of 5h/week"
+  - id: PROB-02
+    statement: "answers to clients cite regulations from memory, with no auditable trail"
+    severity: alta
+    evidence: "review of 20 legal opinions: 30% with outdated or incomplete citations"
+
+solution_one_liner: "Tax queries answered in minutes, with every claim grounded in a verified, clickable regulatory provision."
+
+tenets:
+  - id: TEN-01
+    rule: "when in doubt, cite the regulatory source — never paraphrase without a verified link"
+  - id: TEN-02
+    rule: "declining gracefully beats answering outside scope"
+
+north_star:
+  metric: "queries resolved without additional human escalation"
+  target: "70% in 12 months"
+
+hard_questions:
+  - id: FAQ-07
+    q: "what happens when two regulations conflict?"
+    owner_layer: L2
+  - id: FAQ-11
+    q: "what about when the regulation was published less than 24h ago and the base hasn't indexed it yet?"
+    owner_layer: L2
+  - id: FAQ-13
+    q: "how do we prevent the product from becoming a legal-filing tool?"
+    owner_layer: L4
+
+non_goals:
+  - id: NG-01
+    statement: "not a legal-filing tool and does not generate procedural documents"
+  - id: NG-02
+    statement: "does not provide direct advisory to the end taxpayer (B2B only)"
