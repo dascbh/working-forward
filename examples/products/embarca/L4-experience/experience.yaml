@@ -1,0 +1,94 @@
+# Embarca — L4 experience.yaml
+flows:
+  - id: FLW-DECIDIR
+    serves: [MOM-01, MOM-02, MOM-03]
+    initial: solicitando
+    states:
+      solicitando:
+        screen: SCR-WIDGET-CHECKOUT
+        on:
+          ENVIAR: { target: verificando_concorrencia, guard: VAL-SOLICITACAO-01 }
+      verificando_concorrencia:
+        screen: SCR-WIDGET-CHECKOUT
+        invoke: CMD-SolicitarCredito
+        on:
+          EVT-SolicitacaoCriada:      { target: decidindo }
+          EVT-SolicitacaoConcorrente: { target: decidindo, covers: [EDG-01] }
+      decidindo:
+        screen: SCR-WIDGET-CHECKOUT
+        invoke: CMD-DecidirCredito
+        must_render: [indicador_analise_em_tempo_real]
+        on:
+          EVT-DecisaoAprovada: { target: aprovado }
+          EVT-DecisaoNegada:   { target: gerando_motivo }
+          EVT-DecisaoPendente: { target: em_analise, covers: [EDG-03] }
+      em_analise:
+        screen: SCR-WIDGET-CHECKOUT
+        covers: [EDG-03]
+        must_render: [prazo_estimado, opcao_outro_metodo]
+        on:
+          EVT-DecisaoAprovada: { target: aprovado }
+          EVT-DecisaoNegada:   { target: gerando_motivo }
+      aprovado:
+        screen: SCR-CONDICOES
+        must_render: [valor_parcelas_juros]
+        on:
+          ACEITAR: { target: finalizado, guard: VAL-CONDICOES-01 }
+      finalizado:
+        screen: SCR-CONDICOES
+        must_render: [compra_finalizada]
+      gerando_motivo:
+        screen: SCR-NEGATIVA
+        invoke: CMD-GerarMotivo
+        on:
+          EVT-MotivoGerado: { target: negado }
+      negado:
+        screen: SCR-NEGATIVA
+        covers: [EDG-02, EDG-04]
+        must_render: [motivo_compreensivel, alternativa_quando_aplicavel]
+
+  - id: FLW-INTEGRAR
+    serves: [MOM-10, MOM-11]
+    initial: acompanhando
+    states:
+      acompanhando:
+        screen: SCR-PAINEL-PARCEIRO
+        answers: [FAQ-03]
+        must_render: [status_por_venda]
+        on:
+          EVT-StatusNotificado:   { target: acompanhando }
+          WEBHOOK_FALHOU:         { target: reentregando, covers: [EDG-05] }
+          ABRIR_RECONCILIACAO:    { target: reconciliando }
+      reentregando:
+        screen: SCR-PAINEL-PARCEIRO
+        invoke: CMD-ReentregarWebhook
+        covers: [EDG-05]
+        must_render: [status_sempre_consultavel_no_painel]
+        on:
+          EVT-StatusNotificado: { target: acompanhando }
+      reconciliando:
+        screen: SCR-EXTRATO-REPASSE
+        invoke: CMD-ExecutarRepasse
+        on:
+          EVT-RepasseExecutado: { target: repassado, covers: [EDG-06] }
+      repassado:
+        screen: SCR-EXTRATO-REPASSE
+        covers: [EDG-06, EDG-07]
+        must_render: [valor_bruto_taxa_liquido]
+
+validations:
+  - id: VAL-SOLICITACAO-01
+    field: solicitacao.valor
+    rule: "valor solicitado deve ser numérico, maior que zero e menor ou igual ao valor da compra"
+    derived_from: POL-EMBUTIDO-01
+  - id: VAL-CONDICOES-01
+    field: aprovacao.aceite
+    rule: "comprador deve aceitar explicitamente as condições (valor, parcelas, juros) antes de finalizar a compra financiada"
+    derived_from: POL-DECISAO-01
+
+screens:
+  - { id: SCR-WIDGET-CHECKOUT, components: [widget-financiamento, indicador-analise], tokens_scope: "solicitacao.*" }
+  - { id: SCR-CONDICOES,       components: [resumo-condicoes, cta-aceitar], tokens_scope: "credito.*" }
+  - { id: SCR-NEGATIVA,        components: [motivo-negativa-card, alternativa-cta], tokens_scope: "credito.*" }
+  - { id: SCR-PAINEL-PARCEIRO, components: [lista-vendas-financiadas, status-badge], tokens_scope: "liquidacao.*" }
+  - { id: SCR-EXTRATO-REPASSE, components: [linha-repasse, total-liquido], tokens_scope: "liquidacao.*" }

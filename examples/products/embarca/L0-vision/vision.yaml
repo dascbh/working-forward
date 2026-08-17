@@ -1,0 +1,45 @@
+# Embarca — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: embarca
+customer:
+  primary:
+    id: CUST-PLATAFORMA
+    who: "produto de e-commerce, SaaS ou marketplace que quer oferecer crédito ou parcelamento dentro do próprio fluxo de compra"
+    context: "perde venda quando o limite do cartão do cliente não cobre o valor, e não tem meses pra homologar crédito com um banco"
+  secondary:
+    - id: CUST-COMPRADOR-FINAL
+      who: "cliente final da plataforma parceira, que recebe uma oferta de crédito no momento da compra"
+      context: "quer saber se foi aprovado e em quanto vai pagar, na hora, sem sair do fluxo de compra"
+
+problem:
+  - id: PROB-01
+    statement: "plataformas perdem venda no momento da decisão de compra porque a única opção de pagamento é o limite do cartão do cliente, que muitas vezes não cobre o valor"
+    severity: alta
+    evidence: "análise de checkout em 8 plataformas parceiras: 19% dos carrinhos abandonados tinham valor acima do limite disponível do comprador"
+  - id: PROB-02
+    statement: "integrar crédito embutido hoje significa negociar com um banco, esperar meses de homologação, e ainda assim entregar uma experiência de decisão de crédito genérica, deslocada do fluxo da plataforma parceira"
+    severity: alta
+    evidence: "entrevista com 10 plataformas: tempo médio de homologação bancária de 5 meses; nenhuma manteve a experiência 100% embutida"
+
+solution_one_liner: "Decisão de crédito em tempo real, embutida no checkout de qualquer plataforma parceira — o comprador nunca sai do fluxo pra saber se foi aprovado."
+
+tenets:
+  - id: TEN-01
+    rule: "a decisão de crédito acontece dentro do fluxo da plataforma parceira — nunca redireciona o comprador pra um site externo"
+  - id: TEN-02
+    rule: "toda negativa de crédito vem com um motivo compreensível e, quando possível, uma alternativa (valor menor, prazo diferente)"
+  - id: TEN-03
+    rule: "o risco de crédito é sempre da Embarca — a plataforma parceira nunca assume passivo de inadimplência do comprador final"
+
+north_star:
+  metric: "decisões de crédito respondidas em menos de 5 segundos"
+  target: "95% em 6 meses"
+
+hard_questions:
+  - { id: FAQ-01, q: "o que acontece quando o comprador é negado?", owner_layer: L2 }
+  - { id: FAQ-02, q: "como a Embarca decide o limite de crédito sem histórico prévio do comprador na própria base?", owner_layer: L2 }
+  - { id: FAQ-03, q: "como a plataforma parceira sabe, em tempo real, que uma venda foi financiada com sucesso?", owner_layer: L4 }
+  - { id: FAQ-04, q: "como o sistema evita aprovar duas linhas de crédito simultâneas para o mesmo comprador em plataformas parceiras diferentes?", owner_layer: L3 }
+
+non_goals:
+  - { id: NG-01, statement: "não transfere o risco de crédito para a plataforma parceira — a Embarca é a credora, não uma intermediária de risco alheio" }
+  - { id: NG-02, statement: "não oferece crédito para pessoa jurídica no MVP — só crédito ao consumidor final (B2B2C)" }

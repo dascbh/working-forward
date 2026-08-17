@@ -1,0 +1,92 @@
+# Consulta — L2 blueprint.yaml
+blueprints:
+  - moment_ref: MOM-01
+    frontstage:
+      - "formulário de triagem guiado por sintoma, com perguntas adaptativas"
+    backstage:
+      - { id: BCK-01, action: "classificação de risco do sintoma relatado (baixo/médio/alto) por protocolo clínico", sla_ms: 2000 }
+    policies:
+      - id: POL-TRIAGEM-01
+        rule: "todo sintoma passa por classificação de risco antes de qualquer agendamento — nunca agenda direto sem triagem"
+        source: TEN-02
+        on_violation: "agendamento sem triagem completa é bloqueado"
+    edge_cases:
+      - id: EDG-01
+        case: "sintoma relatado indica possível emergência (ex: dor no peito, dificuldade respiratória) — FAQ-01"
+        resolution: "paciente é imediatamente redirecionado para orientação de atendimento presencial/emergência, sem entrar na fila de telemedicina — NG-01"
+        severity: alta
+      - id: EDG-02
+        case: "sintoma ambíguo, classificação de risco incerta pelo protocolo automático"
+        resolution: "caso é escalado para triagem por enfermeiro humano antes de liberar o agendamento, nunca decidido só pelo protocolo automático em caso de incerteza"
+        severity: media
+
+  - moment_ref: MOM-02
+    frontstage:
+      - "tela de consentimento explicando o que será registrado, compartilhado e as limitações da telemedicina, com aceite explícito"
+    backstage:
+      - { id: BCK-02, action: "registro do consentimento com timestamp e versão do termo aceito", sla_ms: 200 }
+    policies:
+      - id: POL-CONSENT-01
+        rule: "consulta só inicia após consentimento explícito registrado — nunca implícito por avançar de tela"
+        source: TEN-01
+        on_violation: "início da consulta é bloqueado sem registro de consentimento"
+    edge_cases:
+      - id: EDG-03
+        case: "paciente é menor de idade ou dependente — FAQ-02"
+        resolution: "consentimento é exigido do responsável legal, com vínculo verificado antes de liberar a consulta"
+        severity: alta
+
+  - moment_ref: MOM-03
+    frontstage:
+      - "chamada de vídeo com histórico clínico visível ao médico em painel lateral"
+    backstage:
+      - { id: BCK-03, action: "estabelecimento da chamada de vídeo com fallback de qualidade adaptável", sla_ms: 3000 }
+    policies:
+      - id: POL-CONTEXTO-01
+        rule: "histórico clínico relevante é exibido ao médico antes do início da chamada — nunca montado durante a consulta"
+        source: PROB-02
+        on_violation: "início da chamada sem histórico carregado é bloqueado"
+    edge_cases:
+      - id: EDG-04
+        case: "chamada de vídeo cai no meio da consulta — FAQ-03"
+        resolution: "sistema tenta reconexão automática por 60 segundos preservando a sessão; se falhar, oferece continuar por chamada de voz ou reagendar sem perder o que já foi registrado"
+        severity: alta
+
+  - moment_ref: MOM-11
+    frontstage:
+      - "ação de repasse com nota de contexto obrigatória para o próximo médico"
+    backstage:
+      - { id: BCK-04, action: "transferência do histórico clínico completo e da nota de repasse para o especialista de destino", sla_ms: 1000 }
+    policies:
+      - id: POL-REPASSE-01
+        rule: "todo repasse transfere o histórico clínico completo e a nota do médico de origem — paciente nunca reconta a história do zero"
+        source: TEN-03
+        on_violation: "repasse sem histórico anexado é bloqueado"
+    edge_cases:
+      - id: EDG-05
+        case: "nenhum especialista do tipo necessário está disponível no momento do repasse"
+        resolution: "caso entra em fila prioritária de repasse com o histórico já anexado, e o paciente é avisado do tempo estimado — nunca perde a posição por reagendar do zero"
+        severity: media
+
+  - moment_ref: MOM-20
+    frontstage:
+      - "orientação clara: sinais identificados, e instrução imediata de buscar emergência presencial ou ligar para o serviço de emergência local"
+    backstage:
+      - { id: BCK-05, action: "registro do evento de redirecionamento de emergência para auditoria clínica", sla_ms: 500 }
+    policies:
+      - id: POL-EMERGENCIA-01
+        rule: "sintoma classificado como emergência nunca entra em fila de telemedicina — o redirecionamento é imediato e bloqueante"
+        source: NG-01
+        on_violation: "qualquer tentativa de agendar consulta por vídeo após classificação de emergência é bloqueada"
+    edge_cases:
+      - id: EDG-06
+        case: "paciente insiste em prosseguir com consulta por vídeo mesmo após o alerta de emergência"
+        resolution: "sistema mantém o bloqueio do agendamento por vídeo e reforça a orientação; não existe caminho de 'continuar mesmo assim' para sintoma de emergência"
+        severity: alta
+      - id: EDG-07
+        case: "volume de redirecionamentos de emergência num período serve como sinal de possível falha no protocolo de triagem"
+        accepted_risk:
+          owner: "PM"
+          date: "2026-08-17"
+          reason: "MVP registra para auditoria manual; alerta automático de anomalia na taxa de redirecionamento fica para v2"
+        severity: baixa

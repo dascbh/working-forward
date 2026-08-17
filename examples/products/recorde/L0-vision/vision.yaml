@@ -1,0 +1,43 @@
+# Recorde — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: recorde
+customer:
+  primary:
+    id: CUST-FINANCE
+    who: "gestor financeiro/growth de uma empresa SaaS que cobra por assinatura recorrente"
+    context: "descobre erro de cobrança só quando o cliente reclama ou quando o financeiro fecha o mês"
+  secondary:
+    - id: CUST-ASSINANTE
+      who: "cliente final que paga a assinatura"
+      context: "quer entender a fatura e mudar de plano sem precisar ligar pro suporte"
+
+problem:
+  - id: PROB-01
+    statement: "mudança de plano no meio do ciclo gera cobrança errada com frequência — proração calculada errado ou nem calculada"
+    severity: alta
+    evidence: "auditoria em 12 empresas SaaS: 41% das trocas de plano no meio do ciclo exigiram correção manual da fatura"
+  - id: PROB-02
+    statement: "cliente que quer pausar a assinatura acaba cancelando, porque pausar não existe como opção — a empresa perde o cliente que só queria um respiro"
+    severity: alta
+    evidence: "pesquisa de churn com 300 cancelamentos: 22% dos clientes indicaram que teriam preferido pausar temporariamente"
+
+solution_one_liner: "Cobrança recorrente que acerta a proração em qualquer troca de plano, e nunca transforma um pedido de pausa em cancelamento."
+
+tenets:
+  - id: TEN-01
+    rule: "toda mudança de plano no meio do ciclo gera proração calculada e visível, nunca estimada ou omitida"
+  - id: TEN-02
+    rule: "cartão recusado nunca cancela a assinatura na primeira tentativa — sempre há uma janela de retentativa antes da perda de acesso"
+
+north_star:
+  metric: "faturas emitidas sem correção manual pelo financeiro"
+  target: "98% em 6 meses"
+
+hard_questions:
+  - { id: FAQ-01, q: "o que acontece quando o cliente troca de plano duas vezes no mesmo ciclo de cobrança?", owner_layer: L2 }
+  - { id: FAQ-02, q: "e se o cartão for recusado no dia da renovação?", owner_layer: L2 }
+  - { id: FAQ-03, q: "como o cliente pausa a assinatura sem perder o histórico e as configurações?", owner_layer: L4 }
+  - { id: FAQ-04, q: "como o sistema evita cobrar duas vezes pelo mesmo período quando há upgrade e downgrade no mesmo dia?", owner_layer: L3 }
+
+non_goals:
+  - { id: NG-01, statement: "não processa pagamento único (venda avulsa) — só ciclos recorrentes" }
+  - { id: NG-02, statement: "não decide política de preço/plano — aplica a tabela de preços definida pela empresa, não sugere descontos por conta própria" }

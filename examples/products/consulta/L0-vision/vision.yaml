@@ -1,0 +1,45 @@
+# Consulta — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: consulta
+customer:
+  primary:
+    id: CUST-PACIENTE
+    who: "paciente que precisa de atendimento médico não presencial"
+    context: "enfrenta a mesma fila de agendamento presencial mesmo para sintomas que poderiam ser resolvidos remotamente"
+  secondary:
+    - id: CUST-MEDICO
+      who: "médico que atende por telemedicina, muitas vezes em múltiplas plataformas ou clínicas"
+      context: "precisa de contexto clínico completo do paciente antes da consulta, e de um jeito seguro de escalar ou repassar o caso"
+
+problem:
+  - id: PROB-01
+    statement: "paciente com sintoma que poderia ser resolvido remotamente enfrenta a mesma fila de agendamento presencial, atrasando o cuidado"
+    severity: alta
+    evidence: "auditoria em 5 clínicas: 38% das consultas presenciais agendadas eram elegíveis para telemedicina pelo protocolo clínico"
+  - id: PROB-02
+    statement: "médico entra na consulta sem o histórico clínico relevante organizado, perdendo tempo da consulta reconstruindo contexto"
+    severity: alta
+    evidence: "entrevista com 20 médicos de telemedicina: tempo médio de 4 minutos por consulta gasto reconstruindo histórico"
+
+solution_one_liner: "Consulta por vídeo com triagem antes do agendamento e histórico clínico organizado na tela do médico desde o primeiro segundo — e escalação seguindo o paciente quando o caso muda de mãos."
+
+tenets:
+  - id: TEN-01
+    rule: "consentimento informado é obrigatório antes de qualquer consulta — nunca implícito"
+  - id: TEN-02
+    rule: "sintoma com risco de emergência nunca fica em fila de telemedicina — é redirecionado para atendimento presencial imediato"
+  - id: TEN-03
+    rule: "todo repasse de caso entre médicos leva o histórico clínico completo — paciente nunca reconta a própria história do zero"
+
+north_star:
+  metric: "consultas concluídas sem necessidade de encaminhamento presencial adicional"
+  target: "75% em 12 meses"
+
+hard_questions:
+  - { id: FAQ-01, q: "o que acontece quando o sintoma relatado na triagem indica possível emergência?", owner_layer: L2 }
+  - { id: FAQ-02, q: "como o consentimento é obtido e registrado antes da consulta?", owner_layer: L2 }
+  - { id: FAQ-03, q: "e se a chamada de vídeo cair no meio da consulta?", owner_layer: L4 }
+  - { id: FAQ-04, q: "como o histórico clínico é transferido quando o médico repassa o caso para outro especialista?", owner_layer: L3 }
+
+non_goals:
+  - { id: NG-01, statement: "não substitui atendimento de emergência — sintoma de risco é sempre redirecionado, nunca atendido por vídeo" }
+  - { id: NG-02, statement: "não emite receita controlada sem validação adicional exigida por regulamentação — fora do escopo do MVP" }

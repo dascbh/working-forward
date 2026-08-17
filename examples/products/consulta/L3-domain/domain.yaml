@@ -1,0 +1,44 @@
+# Consulta — L3 domain.yaml
+events:
+  - { id: EVT-SintomaRelatado,       aggregate: AGG-Triagem,         emitted_by: CMD-RelatarSintoma }
+  - { id: EVT-RiscoClassificado,     aggregate: AGG-Triagem,         emitted_by: BCK-01 }
+  - { id: EVT-EmergenciaDetectada,   aggregate: AGG-Triagem,         emitted_by: BCK-01 }
+  - { id: EVT-ConsentimentoRegistrado, aggregate: AGG-Consulta,      emitted_by: BCK-02 }
+  - { id: EVT-ConsultaIniciada,      aggregate: AGG-Consulta,        emitted_by: BCK-03 }
+  - { id: EVT-ChamadaCaiu,           aggregate: AGG-Consulta,        emitted_by: BCK-03 }
+  - { id: EVT-CasoRepassado,         aggregate: AGG-HistoricoClinico, emitted_by: BCK-04 }
+
+commands:
+  - { id: CMD-RelatarSintoma,          actor: ACT-PACIENTE, produces: [EVT-SintomaRelatado] }
+  - { id: CMD-ClassificarRisco,        actor: system,         produces: [EVT-RiscoClassificado, EVT-EmergenciaDetectada] }
+  - { id: CMD-RegistrarConsentimento,  actor: ACT-PACIENTE, produces: [EVT-ConsentimentoRegistrado] }
+  - { id: CMD-IniciarConsulta,         actor: system,         produces: [EVT-ConsultaIniciada] }
+  - { id: CMD-ReconectarChamada,       actor: system,         produces: [] }
+  - { id: CMD-RepassarCaso,            actor: ACT-MEDICO,   produces: [EVT-CasoRepassado] }
+  - { id: CMD-RedirecionarEmergencia,  actor: system,         produces: [] }
+
+reactions:
+  - { id: RCT-01, when: EVT-SintomaRelatado,         then: CMD-ClassificarRisco,        implements: POL-TRIAGEM-01 }
+  - { id: RCT-02, when: EVT-EmergenciaDetectada,     then: CMD-RedirecionarEmergencia,  implements: POL-EMERGENCIA-01 }
+  - { id: RCT-03, when: EVT-ConsentimentoRegistrado, then: CMD-IniciarConsulta,         implements: POL-CONSENT-01 }
+  - { id: RCT-04, when: EVT-ChamadaCaiu,             then: CMD-ReconectarChamada }
+
+aggregates:
+  - { id: AGG-Triagem,  invariants: [POL-TRIAGEM-01, POL-EMERGENCIA-01] }
+  - { id: AGG-Consulta, invariants: [POL-CONSENT-01, POL-CONTEXTO-01] }
+  - id: AGG-HistoricoClinico
+    invariants: [POL-REPASSE-01]
+    note: "transferência obrigatória do histórico completo em todo repasse — resposta estrutural a FAQ-04"
+
+contexts:
+  - id: CTX-Triagem
+    aggregates: [AGG-Triagem]
+    moments_served: [MOM-01, MOM-20]
+  - id: CTX-Atendimento
+    aggregates: [AGG-Consulta]
+    moments_served: [MOM-02, MOM-03, MOM-04, MOM-10]
+    relationship: { with: CTX-Triagem, type: downstream-conformist }
+  - id: CTX-Prontuario
+    aggregates: [AGG-HistoricoClinico]
+    moments_served: [MOM-11]
+    relationship: { with: CTX-Atendimento, type: shared-kernel }

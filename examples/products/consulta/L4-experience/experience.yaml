@@ -1,0 +1,115 @@
+# Consulta — L4 experience.yaml
+flows:
+  - id: FLW-CONSULTAR
+    serves: [MOM-01, MOM-02, MOM-03, MOM-04, MOM-20]
+    initial: relatando
+    states:
+      relatando:
+        screen: SCR-TRIAGEM
+        on:
+          ENVIAR: { target: classificando, guard: VAL-SINTOMA-01 }
+      classificando:
+        screen: SCR-TRIAGEM
+        invoke: CMD-ClassificarRisco
+        on:
+          EVT-RiscoClassificado:   { target: agendando }
+          EVT-EmergenciaDetectada: { target: redirecionado_emergencia, covers: [EDG-01] }
+          RISCO_INCERTO:           { target: triagem_humana, covers: [EDG-02] }
+      triagem_humana:
+        screen: SCR-TRIAGEM
+        covers: [EDG-02]
+        must_render: [aviso_avaliacao_enfermeiro]
+        on:
+          EVT-RiscoClassificado: { target: agendando }
+      redirecionado_emergencia:
+        screen: SCR-EMERGENCIA
+        covers: [EDG-01, EDG-06]
+        must_render: [orientacao_emergencia]
+      agendando:
+        screen: SCR-AGENDA
+        on:
+          AGENDAR: { target: consentindo }
+      consentindo:
+        screen: SCR-CONSENTIMENTO
+        covers: [EDG-03]
+        on:
+          ACEITAR: { target: registrando_consentimento, guard: VAL-CONSENT-01 }
+      registrando_consentimento:
+        screen: SCR-CONSENTIMENTO
+        invoke: CMD-RegistrarConsentimento
+        on:
+          EVT-ConsentimentoRegistrado: { target: sala_de_espera }
+      sala_de_espera:
+        screen: SCR-SALA-ESPERA
+        on:
+          EVT-ConsultaIniciada: { target: em_consulta }
+      em_consulta:
+        screen: SCR-VIDEO
+        must_render: [historico_clinico_lateral]
+        on:
+          EVT-ChamadaCaiu: { target: reconectando, covers: [EDG-04] }
+          FINALIZAR:       { target: encaminhamento }
+      reconectando:
+        screen: SCR-VIDEO
+        covers: [EDG-04]
+        answers: [FAQ-03]
+        must_render: [tentativa_reconexao, opcao_voz_ou_reagendar]
+        on:
+          RECONECTADO: { target: em_consulta }
+      encaminhamento:
+        screen: SCR-ENCAMINHAMENTO
+        must_render: [proximo_passo]
+
+  - id: FLW-ATENDER
+    serves: [MOM-10, MOM-11]
+    initial: revisando_historico
+    states:
+      revisando_historico:
+        screen: SCR-PAINEL-MEDICO
+        must_render: [historico_organizado]
+        on:
+          INICIAR: { target: atendendo }
+      atendendo:
+        screen: SCR-VIDEO
+        on:
+          REPASSAR:  { target: repassando }
+          FINALIZAR: { target: concluido }
+      repassando:
+        screen: SCR-REPASSE
+        invoke: CMD-RepassarCaso
+        on:
+          EVT-CasoRepassado:       { target: repassado }
+          ESPECIALISTA_INDISPONIVEL: { target: fila_prioritaria, covers: [EDG-05] }
+      fila_prioritaria:
+        screen: SCR-REPASSE
+        covers: [EDG-05]
+        must_render: [posicao_fila_com_historico_anexado]
+        on:
+          EVT-CasoRepassado: { target: repassado }
+      repassado:
+        screen: SCR-REPASSE
+        must_render: [confirmacao_repasse]
+      concluido:
+        screen: SCR-PAINEL-MEDICO
+        must_render: [consulta_encerrada]
+
+validations:
+  - id: VAL-SINTOMA-01
+    field: triagem.sintoma
+    rule: "descrição não vazia; pelo menos um sintoma estruturado selecionado"
+    derived_from: POL-TRIAGEM-01
+  - id: VAL-CONSENT-01
+    field: consentimento.aceite
+    rule: "aceite explícito obrigatório — avançar de tela sem marcar aceite não é consentimento válido"
+    derived_from: POL-CONSENT-01
+
+screens:
+  - { id: SCR-TRIAGEM,        components: [formulario-triagem, badge-risco], tokens_scope: "triagem.*" }
+  - { id: SCR-EMERGENCIA,     components: [orientacao-emergencia-card], tokens_scope: "triagem.*" }
+  - { id: SCR-AGENDA,         components: [seletor-horario], tokens_scope: "atendimento.*" }
+  - { id: SCR-CONSENTIMENTO,  components: [termo-consentimento, checkbox-aceite], tokens_scope: "atendimento.*" }
+  - { id: SCR-SALA-ESPERA,    components: [indicador-espera], tokens_scope: "atendimento.*" }
+  - { id: SCR-VIDEO,          components: [player-video, painel-historico], tokens_scope: "atendimento.*" }
+  - { id: SCR-ENCAMINHAMENTO, components: [resumo-encaminhamento], tokens_scope: "atendimento.*" }
+  - { id: SCR-PAINEL-MEDICO,  components: [agenda-medico, resumo-historico], tokens_scope: "atendimento.*" }
+  - { id: SCR-REPASSE,        components: [nota-repasse, badge-fila], tokens_scope: "prontuario.*" }

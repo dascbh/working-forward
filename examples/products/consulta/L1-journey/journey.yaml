@@ -1,0 +1,71 @@
+# Consulta — L1 journey.yaml
+actors:
+  - { id: ACT-PACIENTE, name: "Paciente", persona_ref: CUST-PACIENTE }
+  - { id: ACT-MEDICO, name: "Médico", persona_ref: CUST-MEDICO }
+
+journeys:
+  - id: JRN-CONSULTAR
+    actor: ACT-PACIENTE
+    trigger: "paciente tem um sintoma e busca atendimento"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Relatar o sintoma na triagem"
+        intent: "descrever o que sente e ser direcionado ao cuidado certo"
+        emotion_target: acolhimento
+        channel: [web, app]
+        truth_moment: false
+        vision_refs: [PROB-01]
+      - id: MOM-02
+        name: "Dar consentimento informado"
+        intent: "entender o que está autorizando antes da consulta"
+        emotion_target: segurança
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [TEN-01, FAQ-02]
+      - id: MOM-03
+        name: "Realizar a consulta por vídeo"
+        intent: "ser atendido sem precisar contar tudo de novo"
+        emotion_target: confiança
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [PROB-02, TEN-03]
+      - id: MOM-04
+        name: "Receber o encaminhamento ou prescrição"
+        intent: "sair da consulta sabendo exatamente o próximo passo"
+        emotion_target: clareza
+        channel: [web, app]
+        truth_moment: true
+
+  - id: JRN-ATENDER
+    actor: ACT-MEDICO
+    trigger: "consulta agendada aparece na agenda do médico"
+    shape: loop        # médico atende múltiplas consultas continuamente
+    moments:
+      - id: MOM-10
+        name: "Revisar o histórico antes da consulta"
+        intent: "entrar na consulta com contexto, sem perder tempo reconstruindo a história"
+        emotion_target: preparo
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-02]
+      - id: MOM-11
+        name: "Repassar o caso para outro especialista"
+        intent: "transferir o paciente sem perder informação clínica no caminho"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-03, FAQ-04]
+
+  - id: JRN-EMERGENCIA
+    actor: ACT-PACIENTE
+    trigger: "triagem identifica sinal de possível emergência durante o relato do sintoma"
+    shape: linear
+    moments:
+      - id: MOM-20
+        name: "Ser redirecionado para atendimento presencial imediato"
+        intent: "não perder tempo numa fila de telemedicina quando o risco é alto"
+        emotion_target: urgência
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [TEN-02, FAQ-01, NG-01]

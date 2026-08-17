@@ -1,0 +1,92 @@
+# Embarca — L2 blueprint.yaml
+blueprints:
+  - moment_ref: MOM-01
+    frontstage:
+      - "widget de financiamento embutido no checkout da plataforma parceira, com identidade visual adaptável"
+    backstage:
+      - { id: BCK-01, action: "coleta dos dados mínimos necessários para análise (CPF, valor solicitado) sem sair do fluxo da plataforma parceira", sla_ms: 500 }
+    policies:
+      - id: POL-EMBUTIDO-01
+        rule: "toda etapa da solicitação de crédito acontece dentro do fluxo da plataforma parceira — nenhum redirecionamento para domínio externo"
+        source: TEN-01
+        on_violation: "integração que redireciona o comprador é rejeitada na homologação"
+    edge_cases:
+      - id: EDG-01
+        case: "comprador já tem uma solicitação de crédito em análise em outra plataforma parceira no mesmo momento — FAQ-04"
+        resolution: "sistema identifica o CPF com solicitação em curso e trata a nova solicitação em conjunto com a existente, nunca aprovando duas linhas simultâneas de forma independente"
+        severity: alta
+
+  - moment_ref: MOM-02
+    frontstage:
+      - "resposta em tela: aprovado com condições (valor, parcelas, juros) ou análise adicional necessária"
+    backstage:
+      - { id: BCK-02, action: "motor de decisão de crédito em tempo real combinando dados da solicitação com fontes de dados externas de risco", sla_ms: 5000 }
+    policies:
+      - id: POL-DECISAO-01
+        rule: "decisão de crédito responde em tempo real dentro do checkout — nunca deixa o comprador esperando fora do fluxo de compra"
+        source: TEN-01
+        on_violation: "solicitação que excede o tempo-alvo aciona modo de contingência, nunca timeout silencioso"
+    edge_cases:
+      - id: EDG-02
+        case: "comprador sem histórico de crédito prévio na base da Embarca (thin file) — FAQ-02"
+        resolution: "decisão usa dados alternativos (tempo de conta na plataforma parceira, histórico de compras, fontes de bureau externas) em vez de negar automaticamente por falta de histórico"
+        severity: alta
+      - id: EDG-03
+        case: "motor de decisão excede o tempo-alvo de resposta (ex: fonte de dados externa lenta)"
+        resolution: "checkout exibe 'em análise' com prazo estimado e opção de finalizar a compra por outro método enquanto aguarda, sem travar o fluxo"
+        severity: media
+
+  - moment_ref: MOM-03
+    frontstage:
+      - "tela de negativa com motivo em linguagem simples e, quando aplicável, uma alternativa (valor menor, prazo maior)"
+    backstage:
+      - { id: BCK-03, action: "geração de motivo compreensível a partir dos fatores de decisão do motor de crédito", sla_ms: 1000 }
+    policies:
+      - id: POL-NEGATIVA-01
+        rule: "toda negativa vem com motivo compreensível; quando o motivo for de valor, o sistema sempre tenta uma alternativa de valor menor antes de negar por completo"
+        source: TEN-02
+        on_violation: "negativa sem motivo ou sem tentativa de alternativa é bloqueada antes de exibir"
+    edge_cases:
+      - id: EDG-04
+        case: "negativa por motivo regulatório que não pode ser detalhado ao comprador (ex: suspeita de fraude sob investigação) — FAQ-01"
+        resolution: "mensagem genérica de 'não foi possível aprovar neste momento' sem alternativa oferecida e sem expor o motivo real — nunca inventa um motivo falso pra parecer transparente"
+        severity: alta
+
+  - moment_ref: MOM-10
+    frontstage:
+      - "painel da plataforma parceira com status de cada venda financiada: aprovada, em análise, negada, repassada"
+    backstage:
+      - { id: BCK-04, action: "emissão de evento de status para a plataforma parceira a cada mudança de estado da decisão de crédito", sla_ms: 500 }
+    policies:
+      - id: POL-STATUS-01
+        rule: "toda mudança de status de uma decisão de crédito é notificada à plataforma parceira em tempo real — nunca só disponível em relatório do dia seguinte"
+        source: PROB-02
+        on_violation: "atraso de notificação além do SLA é tratado como incidente"
+    edge_cases:
+      - id: EDG-05
+        case: "webhook de notificação para a plataforma parceira falha (endpoint fora do ar)"
+        resolution: "sistema reentrega com backoff por até 24h e mantém o status correto consultável via painel, nunca dependendo só do webhook pra refletir a realidade"
+        severity: media
+
+  - moment_ref: MOM-11
+    frontstage:
+      - "extrato de repasses com valor bruto, taxa da Embarca e valor líquido repassado por venda"
+    backstage:
+      - { id: BCK-05, action: "cálculo e execução do repasse líquido à plataforma parceira após confirmação da venda financiada" }
+    policies:
+      - id: POL-REPASSE-01
+        rule: "repasse à plataforma parceira acontece após confirmação da venda — nunca antes da decisão de crédito estar completa"
+        source: TEN-03
+        on_violation: "repasse antecipado a uma decisão pendente é bloqueado"
+    edge_cases:
+      - id: EDG-06
+        case: "venda financiada é cancelada pelo comprador (arrependimento) depois do repasse já ter sido feito"
+        resolution: "valor é estornado da próxima janela de repasse à plataforma parceira, nunca cobrado retroativamente sem aviso"
+        severity: media
+      - id: EDG-07
+        case: "volume de repasses num único dia excede o processamento em lote programado"
+        accepted_risk:
+          owner: "PM"
+          date: "2026-08-17"
+          reason: "MVP processa repasse em lote diário; repasse em tempo real fica para v2 quando o volume justificar"
+        severity: baixa

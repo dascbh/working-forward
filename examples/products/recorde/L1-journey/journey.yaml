@@ -1,0 +1,71 @@
+# Recorde — L1 journey.yaml
+actors:
+  - { id: ACT-ASSINANTE, name: "Assinante", persona_ref: CUST-ASSINANTE }
+  - { id: ACT-FINANCE, name: "Gestor financeiro", persona_ref: CUST-FINANCE }
+
+journeys:
+  - id: JRN-ASSINAR
+    actor: ACT-ASSINANTE
+    trigger: "cliente decide assinar ou mudar de plano"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Escolher o plano"
+        intent: "entender o que cada plano oferece e o preço real, incluindo proração se houver troca"
+        emotion_target: clareza
+        channel: [web]
+        truth_moment: false
+        vision_refs: [TEN-01]
+      - id: MOM-02
+        name: "Confirmar a troca ou assinatura"
+        intent: "ver exatamente quanto vai pagar agora e na próxima renovação"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-01, TEN-01]
+      - id: MOM-03
+        name: "Receber a fatura"
+        intent: "entender a cobrança sem precisar perguntar pro suporte"
+        emotion_target: segurança
+        channel: [web, email]
+        truth_moment: true
+        vision_refs: [PROB-01]
+
+  - id: JRN-PAUSAR
+    actor: ACT-ASSINANTE
+    trigger: "cliente quer parar de pagar temporariamente sem perder a conta"
+    shape: linear
+    moments:
+      - id: MOM-10
+        name: "Pausar a assinatura"
+        intent: "parar de pagar sem perder configurações e histórico"
+        emotion_target: alívio
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-02, FAQ-03]
+      - id: MOM-11
+        name: "Retomar a assinatura"
+        intent: "voltar exatamente de onde parou"
+        emotion_target: conveniência
+        channel: [web]
+        truth_moment: false
+
+  - id: JRN-COBRAR
+    actor: ACT-FINANCE
+    trigger: "ciclo de renovação chega para a base de assinantes"
+    shape: loop        # cobrança recorrente é operação contínua, sem fim narrativo fixo
+    moments:
+      - id: MOM-20
+        name: "Cobrar a renovação"
+        intent: "renovar cada assinatura automaticamente, sem intervenção manual"
+        emotion_target: confiabilidade
+        channel: [web]
+        truth_moment: false
+        vision_refs: [TEN-02]
+      - id: MOM-21
+        name: "Tratar falha de cobrança"
+        intent: "recuperar o pagamento antes de perder o cliente ou revogar acesso"
+        emotion_target: controle
+        channel: [web]
+        truth_moment: true
+        vision_refs: [FAQ-02, TEN-02]

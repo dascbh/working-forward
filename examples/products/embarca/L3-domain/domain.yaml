@@ -1,0 +1,44 @@
+# Embarca — L3 domain.yaml
+events:
+  - { id: EVT-SolicitacaoCriada,     aggregate: AGG-Solicitacao, emitted_by: CMD-SolicitarCredito }
+  - { id: EVT-SolicitacaoConcorrente, aggregate: AGG-Solicitacao, emitted_by: BCK-01 }
+  - { id: EVT-DecisaoAprovada,       aggregate: AGG-Decisao,     emitted_by: BCK-02 }
+  - { id: EVT-DecisaoNegada,         aggregate: AGG-Decisao,     emitted_by: BCK-02 }
+  - { id: EVT-DecisaoPendente,       aggregate: AGG-Decisao,     emitted_by: BCK-02 }
+  - { id: EVT-MotivoGerado,          aggregate: AGG-Decisao,     emitted_by: BCK-03 }
+  - { id: EVT-StatusNotificado,      aggregate: AGG-Repasse,     emitted_by: BCK-04 }
+  - { id: EVT-RepasseExecutado,      aggregate: AGG-Repasse,     emitted_by: BCK-05 }
+
+commands:
+  - { id: CMD-SolicitarCredito,     actor: ACT-COMPRADOR, produces: [EVT-SolicitacaoCriada] }
+  - { id: CMD-DecidirCredito,       actor: system,          produces: [EVT-DecisaoAprovada, EVT-DecisaoNegada, EVT-DecisaoPendente] }
+  - { id: CMD-GerarMotivo,          actor: system,          produces: [EVT-MotivoGerado] }
+  - { id: CMD-NotificarPlataforma,  actor: system,          produces: [EVT-StatusNotificado] }
+  - { id: CMD-ExecutarRepasse,      actor: system,          produces: [EVT-RepasseExecutado] }
+  - { id: CMD-ReentregarWebhook,    actor: system,          produces: [] }
+
+reactions:
+  - { id: RCT-01, when: EVT-SolicitacaoCriada, then: CMD-DecidirCredito,      implements: POL-DECISAO-01 }
+  - { id: RCT-02, when: EVT-DecisaoNegada,     then: CMD-GerarMotivo,         implements: POL-NEGATIVA-01 }
+  - { id: RCT-03, when: EVT-DecisaoAprovada,   then: CMD-NotificarPlataforma, implements: POL-STATUS-01 }
+  - { id: RCT-04, when: EVT-StatusNotificado,  then: CMD-ExecutarRepasse,     implements: POL-REPASSE-01 }
+
+aggregates:
+  - id: AGG-Solicitacao
+    invariants: [POL-EMBUTIDO-01]
+    note: "invariante de solicitação única por CPF em análise simultânea entre plataformas parceiras — resposta estrutural a FAQ-04"
+  - { id: AGG-Decisao, invariants: [POL-DECISAO-01, POL-NEGATIVA-01] }
+  - { id: AGG-Repasse, invariants: [POL-STATUS-01, POL-REPASSE-01] }
+
+contexts:
+  - id: CTX-Solicitacao
+    aggregates: [AGG-Solicitacao]
+    moments_served: [MOM-01]
+  - id: CTX-Credito
+    aggregates: [AGG-Decisao]
+    moments_served: [MOM-02, MOM-03]
+    relationship: { with: CTX-Solicitacao, type: customer-supplier }
+  - id: CTX-Liquidacao
+    aggregates: [AGG-Repasse]
+    moments_served: [MOM-10, MOM-11]
+    relationship: { with: CTX-Credito, type: downstream-conformist }

@@ -1,0 +1,93 @@
+# Recorde — L2 blueprint.yaml
+blueprints:
+  - moment_ref: MOM-02
+    frontstage:
+      - "resumo da troca com proração calculada explicitamente: valor creditado do plano antigo, valor cobrado do novo, próxima data de renovação"
+    backstage:
+      - { id: BCK-01, action: "cálculo de proração com base nos dias restantes do ciclo atual e a diferença de preço entre planos", sla_ms: 500 }
+    policies:
+      - id: POL-PRORACAO-01
+        rule: "toda troca de plano no meio do ciclo gera proração calculada e exibida antes da confirmação — nunca estimada ou cobrada sem mostrar o cálculo"
+        source: TEN-01
+        on_violation: "troca de plano é bloqueada até o cálculo de proração estar pronto e visível"
+    edge_cases:
+      - id: EDG-01
+        case: "cliente troca de plano duas vezes no mesmo ciclo de cobrança (ex: upgrade de manhã, downgrade à tarde) — FAQ-01"
+        resolution: "cada troca gera sua própria proração com base no estado anterior; o cálculo final reflete a sequência completa de trocas do ciclo, nunca apenas a última"
+        severity: alta
+      - id: EDG-02
+        case: "troca de ciclo mensal para anual (ou vice-versa) no meio do período"
+        resolution: "proração calculada convertendo o valor não utilizado do ciclo atual em crédito proporcional ao novo ciclo, com o cálculo detalhado exibido"
+        severity: media
+
+  - moment_ref: MOM-03
+    frontstage:
+      - "fatura detalhada linha a linha: assinatura, proração, uso adicional cobrado à parte, se houver"
+    backstage:
+      - { id: BCK-02, action: "montagem da fatura combinando assinatura fixa e cobrança por uso do período", sla_ms: 1000 }
+    policies:
+      - id: POL-FATURA-01
+        rule: "fatura sempre discrimina proração e cobrança por uso separadamente da mensalidade — nunca um valor único sem detalhamento"
+        source: PROB-01
+        on_violation: "fatura sem discriminação é bloqueada antes do envio"
+    edge_cases:
+      - id: EDG-03
+        case: "cobrança por uso do período se soma à proração de troca de plano no mesmo ciclo"
+        resolution: "fatura exibe as duas linhas separadamente, com o total somado ao final — nunca mescladas num único valor"
+        severity: media
+
+  - moment_ref: MOM-10
+    frontstage:
+      - "opção 'pausar' ao lado de 'cancelar', com duração definida (ex: até 3 meses) e explicação do que acontece com dados e configurações"
+    backstage:
+      - { id: BCK-03, action: "suspensão da cobrança recorrente preservando configurações e histórico da conta", sla_ms: 500 }
+    policies:
+      - id: POL-PAUSA-01
+        rule: "pausa preserva configurações, histórico e integrações da conta — cliente não perde nada além do acesso durante o período"
+        source: PROB-02
+        on_violation: "remoção de dados durante a pausa é proibida"
+    edge_cases:
+      - id: EDG-04
+        case: "cliente tenta pausar mas já está no meio de um ciclo pago"
+        resolution: "pausa entra em vigor na próxima renovação; o ciclo já pago continua ativo até o fim, sem reembolso automático nem cobrança adicional"
+        severity: media
+      - id: EDG-05
+        case: "período máximo de pausa (ex: 3 meses) expira sem o cliente retomar"
+        resolution: "conta permanece pausada com aviso recorrente antes de qualquer decisão de cancelamento — nunca cancela automaticamente sem novo aviso explícito"
+        severity: media
+
+  - moment_ref: MOM-20
+    frontstage:
+      - "nenhuma tela dedicada — a renovação é automática; visibilidade acontece via MOM-03 (fatura) e MOM-21 quando falha"
+    backstage:
+      - { id: BCK-04, action: "tentativa de cobrança automática na data de renovação de cada assinatura ativa", sla_ms: 3000 }
+    policies:
+      - id: POL-RENOVA-01
+        rule: "renovação tenta cobrar automaticamente na data prevista; falha não cancela a assinatura na primeira tentativa"
+        source: TEN-02
+        on_violation: "cancelamento imediato por falha única de cobrança é proibido"
+    edge_cases:
+      - id: EDG-06
+        case: "assinatura muda de moeda por causa de mudança de país declarado pelo cliente entre renovações"
+        resolution: "renovação usa a moeda vigente na data da cobrança, com aviso prévio ao cliente sobre a mudança antes da primeira cobrança na nova moeda"
+        severity: baixa
+
+  - moment_ref: MOM-21
+    frontstage:
+      - "painel com status de retentativa: tentativa atual, próximas datas, dias restantes até revogar acesso"
+    backstage:
+      - { id: BCK-05, action: "retentativa automática de cobrança em intervalos crescentes (ex: dia 1, 3, 7)" }
+    policies:
+      - id: POL-RETRY-01
+        rule: "acesso só é revogado após esgotar todas as tentativas de retentativa programadas — nunca na primeira falha"
+        source: TEN-02
+        on_violation: "revogação de acesso antes de esgotar as tentativas é bloqueada"
+    edge_cases:
+      - id: EDG-07
+        case: "cartão é atualizado pelo cliente no meio da janela de retentativa"
+        resolution: "sistema tenta cobrar imediatamente com o novo cartão, sem esperar a próxima data programada de retentativa"
+        severity: media
+      - id: EDG-08
+        case: "todas as tentativas de retentativa se esgotam sem sucesso — FAQ-02"
+        resolution: "acesso é suspenso (não os dados) com aviso claro de como reativar; a conta não é cancelada automaticamente, fica suspensa até ação do cliente"
+        severity: alta

@@ -36,7 +36,10 @@ examples/products/           Pseudo-produtos completos, L0→L5
   ├── agendai/               B2C — agendamento para barbearias
   ├── ponte/                 infraestrutura crítica — coordenação de resposta a crises em tempo real
   ├── atende/                IA — chatbot de atendimento com escalação para humano
-  └── vitrine/               e-commerce — loja virtual com checkout e reserva de estoque
+  ├── vitrine/               e-commerce — loja virtual com checkout e reserva de estoque
+  ├── recorde/               SaaS — cobrança recorrente com proração e pausa de assinatura
+  ├── consulta/              healthtech — telemedicina com triagem e repasse clínico
+  └── embarca/               fintech embutido — crédito em tempo real no checkout de terceiros
 ```
 
 ## Quickstart

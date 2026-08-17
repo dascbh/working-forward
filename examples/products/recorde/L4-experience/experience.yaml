@@ -1,0 +1,113 @@
+# Recorde — L4 experience.yaml
+flows:
+  - id: FLW-ASSINAR
+    serves: [MOM-01, MOM-02, MOM-03]
+    initial: escolhendo
+    states:
+      escolhendo:
+        screen: SCR-PLANOS
+        on:
+          SELECIONAR: { target: calculando_proracao }
+      calculando_proracao:
+        screen: SCR-CONFIRMACAO-TROCA
+        invoke: CMD-CalcularProracao
+        on:
+          EVT-ProracaoCalculada: { target: confirmando }
+      confirmando:
+        screen: SCR-CONFIRMACAO-TROCA
+        must_render: [proracao_detalhada, proxima_renovacao]
+        on:
+          CONFIRMAR: { target: trocando, guard: VAL-TROCA-01 }
+      trocando:
+        screen: SCR-CONFIRMACAO-TROCA
+        invoke: CMD-TrocarPlano
+        on:
+          EVT-PlanoTrocado: { target: trocado }
+          TROCA_REPETIDA_NO_CICLO: { target: trocado, covers: [EDG-01] }
+      trocado:
+        screen: SCR-CONFIRMACAO-TROCA
+        covers: [EDG-02]
+        must_render: [resumo_troca]
+        on:
+          EVT-FaturaEmitida: { target: fatura_disponivel }
+      fatura_disponivel:
+        screen: SCR-FATURA
+        covers: [EDG-03]
+        must_render: [linhas_discriminadas]
+
+  - id: FLW-PAUSAR
+    serves: [MOM-10, MOM-11]
+    initial: ativa
+    states:
+      ativa:
+        screen: SCR-CONTA
+        on:
+          PAUSAR: { target: pausando, guard: VAL-PAUSA-01 }
+      pausando:
+        screen: SCR-CONTA
+        invoke: CMD-PausarAssinatura
+        on:
+          EVT-AssinaturaPausada: { target: pausada, covers: [EDG-04] }
+      pausada:
+        screen: SCR-CONTA
+        covers: [EDG-04, EDG-05]
+        answers: [FAQ-03]
+        must_render: [configuracoes_preservadas, prazo_maximo_pausa]
+        on:
+          RETOMAR: { target: retomando }
+      retomando:
+        screen: SCR-CONTA
+        invoke: CMD-RetomarAssinatura
+        on:
+          EVT-AssinaturaRetomada: { target: ativa }
+
+  - id: FLW-COBRAR
+    serves: [MOM-20, MOM-21]
+    initial: aguardando_renovacao
+    states:
+      aguardando_renovacao:
+        screen: SCR-COBRANCA
+        invoke: CMD-CobrarRenovacao
+        on:
+          EVT-CobrancaTentada: { target: cobrando }
+      cobrando:
+        screen: SCR-COBRANCA
+        must_render: [status_cobranca_em_andamento]
+        on:
+          EVT-CobrancaFalhou: { target: retentando, covers: [EDG-06] }
+          SUCESSO: { target: aguardando_renovacao }
+      retentando:
+        screen: SCR-RETENTATIVA
+        covers: [EDG-07]
+        must_render: [tentativa_atual, proxima_data, dias_ate_suspensao]
+        on:
+          EVT-CobrancaRecuperada: { target: aguardando_renovacao }
+          CARTAO_ATUALIZADO:      { target: retentando, covers: [EDG-07] }
+          TENTATIVAS_ESGOTADAS:   { target: suspendendo, covers: [EDG-08] }
+      suspendendo:
+        screen: SCR-RETENTATIVA
+        invoke: CMD-SuspenderAcesso
+        covers: [EDG-08]
+        on:
+          EVT-AcessoSuspenso: { target: suspensa }
+      suspensa:
+        screen: SCR-CONTA
+        must_render: [aviso_reativacao]
+
+validations:
+  - id: VAL-TROCA-01
+    field: troca.plano_destino
+    rule: "plano de destino deve ser diferente do atual e existir na tabela de preços vigente"
+    derived_from: POL-PRORACAO-01
+  - id: VAL-PAUSA-01
+    field: pausa.duracao
+    rule: "duração deve estar dentro do limite máximo permitido (ex: 3 meses)"
+    derived_from: EDG-05
+
+screens:
+  - { id: SCR-PLANOS,             components: [card-plano, comparador-precos], tokens_scope: "assinatura.*" }
+  - { id: SCR-CONFIRMACAO-TROCA,  components: [resumo-proracao, proxima-renovacao-badge], tokens_scope: "assinatura.*" }
+  - { id: SCR-FATURA,             components: [linha-fatura, total-card], tokens_scope: "faturamento.*" }
+  - { id: SCR-CONTA,              components: [status-assinatura, cta-pausar], tokens_scope: "assinatura.*" }
+  - { id: SCR-COBRANCA,           components: [status-cobranca], tokens_scope: "cobranca.*" }
+  - { id: SCR-RETENTATIVA,        components: [contador-tentativas, alerta-suspensao], tokens_scope: "cobranca.*" }

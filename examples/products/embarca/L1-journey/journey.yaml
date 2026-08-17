@@ -1,0 +1,52 @@
+# Embarca — L1 journey.yaml
+actors:
+  - { id: ACT-COMPRADOR, name: "Comprador final", persona_ref: CUST-COMPRADOR-FINAL }
+  - { id: ACT-PLATAFORMA, name: "Plataforma parceira", persona_ref: CUST-PLATAFORMA }
+
+journeys:
+  - id: JRN-DECIDIR
+    actor: ACT-COMPRADOR
+    trigger: "comprador chega no checkout de uma plataforma parceira e escolhe pagar parcelado/financiado"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Solicitar o crédito no checkout"
+        intent: "pedir o financiamento sem sair do fluxo de compra"
+        emotion_target: conveniência
+        channel: [web, app]
+        truth_moment: false
+        vision_refs: [PROB-01, TEN-01]
+      - id: MOM-02
+        name: "Receber a decisão"
+        intent: "saber na hora se foi aprovado e em quais condições"
+        emotion_target: alívio
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [TEN-01, PROB-02]
+      - id: MOM-03
+        name: "Entender a negativa, se houver"
+        intent: "entender por que não foi aprovado e o que pode fazer diferente"
+        emotion_target: respeito
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [TEN-02, FAQ-01]
+
+  - id: JRN-INTEGRAR
+    actor: ACT-PLATAFORMA
+    trigger: "plataforma parceira acompanha as vendas financiadas no próprio painel"
+    shape: loop
+    moments:
+      - id: MOM-10
+        name: "Acompanhar vendas financiadas em tempo real"
+        intent: "saber, sem esperar reconciliação, quais vendas foram aprovadas e financiadas"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [FAQ-03]
+      - id: MOM-11
+        name: "Reconciliar o repasse"
+        intent: "confirmar que o valor da venda financiada foi repassado corretamente"
+        emotion_target: segurança
+        channel: [web]
+        truth_moment: false
+        vision_refs: [TEN-03]
