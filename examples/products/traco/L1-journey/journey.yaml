@@ -1,0 +1,111 @@
+# Traço — L1 journey.yaml
+#
+# NOTA HONESTA (ver reference-guide.md §8, "Produtos não-transacionais" e
+# NOTES.md deste produto): a jornada abaixo é deliberadamente DESIGUAL entre
+# as duas jornadas, e isso não é descuido — é o formato real do domínio.
+# JRN-PRATICAR é um loop contínuo sem começo/meio/fim narrativo, com vários
+# candidatos plausíveis a `truth_moment`, porque o momento em que o produto
+# "ganha ou perde" o criador não é um único evento — é um padrão agregado ao
+# longo de semanas (ver FAQ-01). O schema de L1 só permite um booleano por
+# momento discreto; não existe campo para "truth moment estatístico sobre uma
+# janela deslizante". Marcamos truth_moment: true em QUATRO momentos da mesma
+# jornada como forma honesta de dizer "o framework nos obriga a escolher
+# pontos discretos, mas a verdade é que nenhum deles sozinho é o momento — é
+# a soma". JRN-DESCOBRIR, em contraste, é uma jornada transacional clássica,
+# curta, sem essa tensão — deixamos essa assimetria visível de propósito, em
+# vez de inflar JRN-DESCOBRIR ou achatar JRN-PRATICAR só para as duas
+# jornadas "combinarem" em tamanho.
+
+actors:
+  - { id: ACT-CRIADOR, name: "Criador", persona_ref: CUST-CRIADOR }
+  - { id: ACT-CACADOR, name: "Caçador de talento", persona_ref: CUST-CACADOR }
+  - { id: ACT-COMUNIDADE, name: "Outro criador da comunidade" }   # dá/recebe reação e feedback; não é persona pagante, análogo a ACT-UNIDADE em ponte
+
+journeys:
+  - id: JRN-PRATICAR
+    actor: ACT-CRIADOR
+    trigger: "início do dia — o prompt novo já está disponível; sem gatilho de início ou fim de sessão real"
+    shape: loop        # loop contínuo, sem fim narrativo — o "ciclo" é diário, mas a jornada em si não termina nunca até o churn
+    moments:
+      - id: MOM-01
+        name: "Receber o prompt do dia"
+        intent: "saber o que desenhar hoje sem paralisia de escolha"
+        emotion_target: inspiração
+        channel: [web, app]
+        truth_moment: false
+        vision_refs: [PROB-01]
+
+      - id: MOM-02
+        name: "Desenhar e postar"
+        intent: "registrar a prática de hoje mesmo se o resultado não estiver bom"
+        emotion_target: coragem
+        channel: [web, app]
+        truth_moment: true      # candidato #1: o ato de praticar em si, independente de qualquer retorno externo
+        vision_refs: [PROB-01, TEN-01]
+
+      - id: MOM-03
+        name: "Esperar a primeira reação"
+        intent: "saber se alguém viu, sem obsessão de métrica"
+        emotion_target: ansiedade
+        channel: [web, app]
+        truth_moment: true      # candidato #2 — provavelmente o mais "verdadeiro" no sentido clássico do Airbnb (ganha/perde
+                                 # a emoção do usuário), mas é assíncrono e sem SLA real: pode levar minutos ou nunca acontecer.
+                                 # Um "momento de verdade" que não tem prazo é uma tensão que o L2 tenta amortecer (EDG-03) sem resolver de fato.
+        vision_refs: [PROB-01, FAQ-01]
+
+      - id: MOM-04
+        name: "Receber feedback técnico de verdade (não só reação)"
+        intent: "entender um jeito concreto de melhorar o traço"
+        emotion_target: gratidão
+        channel: [web, app]
+        truth_moment: true      # candidato #3: é o que a promessa de valor (PROB-02/TEN-01) realmente vende — mas
+                                 # acontece com muito menos frequência que MOM-02/MOM-03, então marcá-lo truth_moment
+                                 # não significa que ele acontece a cada volta do loop.
+        vision_refs: [PROB-02, TEN-01]
+
+      - id: MOM-05
+        name: "Ver a sequência (streak) se manter ou pausar"
+        intent: "perceber se a constância está de pé, sem culpa quando pausa"
+        emotion_target: orgulho
+        channel: [web, app]
+        truth_moment: false     # deliberadamente falso: é o momento mais "medível" (um número muda), mas é o que MENOS
+                                 # captura emoção real segundo os tenets (TEN-02) — o produto existe pra que isso NÃO seja
+                                 # o que decide se o criador fica ou vai embora.
+        vision_refs: [TEN-02]
+
+      - id: MOM-06
+        name: "Descobrir o trabalho de outro criador parecido"
+        intent: "sentir-se parte de uma comunidade de prática, não sozinho"
+        emotion_target: pertencimento
+        channel: [web, app]
+        truth_moment: false
+
+      - id: MOM-07
+        name: "Retomar depois de um hiato"
+        intent: "voltar a postar depois de dias ou semanas sem sentir vergonha ou penalidade"
+        emotion_target: acolhimento
+        channel: [web, app]
+        truth_moment: true      # candidato #4: o momento de re-entrada é onde produtos de hábito mais perdem usuários
+                                 # pra sempre — mas ele não acontece a cada volta do loop, só quando o loop se quebra e
+                                 # tenta reiniciar. É um "truth moment de segunda ordem": sobre o loop, não dentro dele.
+        vision_refs: [TEN-02, FAQ-01]
+
+  - id: JRN-DESCOBRIR
+    actor: ACT-CACADOR
+    trigger: "recrutador tem um briefing de cliente e precisa achar ilustrador com estilo/técnica específicos"
+    shape: linear     # contraste deliberado: jornada transacional clássica, curta, sem a tensão de JRN-PRATICAR
+    moments:
+      - id: MOM-10
+        name: "Buscar talento por estilo/técnica no feed"
+        intent: "encontrar ilustradores emergentes alinhados ao briefing do cliente"
+        emotion_target: eficiência
+        channel: [web]
+        truth_moment: false
+        vision_refs: [PROB-03]
+      - id: MOM-11
+        name: "Contatar o criador sem virar spam"
+        intent: "iniciar conversa comercial fora do fluxo de prática, com consentimento explícito"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [FAQ-05]

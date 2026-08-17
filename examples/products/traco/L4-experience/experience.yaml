@@ -1,0 +1,148 @@
+# Traço — L4 experience.yaml
+flows:
+  - id: FLW-PRATICA
+    serves: [MOM-01, MOM-02, MOM-03, MOM-04, MOM-05, MOM-06, MOM-07]
+    initial: recebendo_prompt
+    states:
+      recebendo_prompt:
+        screen: SCR-PROMPT
+        must_render: [prompt_do_dia, contagem_regressiva_janela_48h]
+        "on":
+          ABRIR_EDITOR: { target: compondo }
+
+      compondo:
+        screen: SCR-EDITOR
+        "on":
+          PUBLICAR: { target: em_moderacao, guard: VAL-CONTEUDO-01, covers: [EDG-01] }
+          SALVAR_RASCUNHO: { target: recebendo_prompt }
+
+      em_moderacao:
+        screen: SCR-PUBLICANDO
+        invoke: CMD-PublicarPost
+        "on":
+          EVT-PostPublicado: { target: aguardando_engajamento }
+          EVT-PostSinalizadoModeracao: { target: revisao_humana, covers: [EDG-02] }
+
+      revisao_humana:
+        screen: SCR-EM-REVISAO
+        covers: [EDG-02]
+        must_render: [aviso_revisao_discreto, prazo_2h]
+        "on":
+          EVT-PostPublicado: { target: aguardando_engajamento }
+
+      # ---------------------------------------------------------------
+      # aguardando_engajamento — o estado que mais tensiona o formalismo de
+      # statechart deste framework. Toda outra transição de saída deste
+      # produto (e da maioria dos exemplos do repositório) é disparada por
+      # um evento determinístico do sistema: um comando terminou, um SLA
+      # técnico estourou (ex.: TIMEOUT_8S em aurora-tax, que é o tempo real
+      # de um pipeline de RAG). Aqui, a transição de saída "normal"
+      # (EVT-ReacaoRegistrada / EVT-ComentarioTecnicoRegistrado) depende da
+      # vontade assíncrona e imprevisível de outro ser humano — pode levar
+      # segundos ou nunca acontecer. EVT-PostSemReacao72h existe só para dar
+      # ao estado uma saída garantida, mas 72h é um LIMIAR DE PRODUTO
+      # (quanto tempo é aceitável esperar antes de intervir), não um SLA
+      # técnico como os outros TIMEOUT_* deste repositório. Modelar esperar-
+      # por-atenção-humana como se fosse esperar-por-um-serviço é a costura
+      # visível entre o formalismo de statechart (bom pra sistemas) e a
+      # realidade de um produto social (governada por comportamento humano
+      # agregado, não por sistema).
+      aguardando_engajamento:
+        screen: SCR-FEED-PROPRIO-POST
+        must_render: [contagem_visualizacoes_discreta, sem_contador_zero_publico]
+        "on":
+          EVT-ReacaoRegistrada: { target: sequencia_atualizada, covers: [EDG-04] }
+          EVT-ComentarioTecnicoRegistrado: { target: feedback_recebido }
+          EVT-PostSemReacao72h: { target: sem_engajamento, covers: [EDG-03] }
+          APAGAR_POST: { target: recebendo_prompt, covers: [EDG-14] }
+
+      sem_engajamento:
+        # este estado representa a POSIÇÃO A do debate contestado em EDG-09
+        # (oferecer feedback manual). A POSIÇÃO B (não fazer nada) não tem um
+        # estado correspondente aqui — "não fazer nada" não é uma tela, é a
+        # AUSÊNCIA de uma. O statechart não tem um jeito limpo de representar
+        # "a opção vencedora ainda não foi escolhida": ele exige uma
+        # transição concreta para algum estado nomeado. Isto é uma limitação
+        # de expressividade real, não um detalhe de implementação — ver
+        # NOTES.md.
+        screen: SCR-SEM-ENGAJAMENTO
+        covers: [EDG-03, EDG-09]
+        must_render: [oferta_pedir_feedback_manual]
+        "on":
+          PEDIR_FEEDBACK: { target: aguardando_engajamento }
+          IGNORAR: { target: recebendo_prompt }
+
+      feedback_recebido:
+        screen: SCR-FEEDBACK
+        covers: [EDG-10, EDG-13]
+        must_render: [comentario_marcado_tecnico, opcao_contestar_marcacao, feedbacks_conflitantes_lado_a_lado_quando_aplicavel]
+        "on":
+          EVT-SequenciaAtualizada: { target: sequencia_atualizada }
+
+      sequencia_atualizada:
+        screen: SCR-SEQUENCIA
+        covers: [EDG-11]
+        must_render: [indicador_sequencia_privado, sem_ranking_publico_de_sequencia]
+        "on":
+          NOVO_DIA: { target: recebendo_prompt }
+          HIATO_DETECTADO: { target: retomada }
+
+      retomada:
+        screen: SCR-RETOMADA
+        covers: [EDG-12]
+        must_render: [prompt_de_hoje_sem_historico_de_dias_perdidos, recorde_pessoal_opcional]
+        "on":
+          EVT-CriadorRetomouPratica: { target: recebendo_prompt }
+
+  - id: FLW-DESCOBRIR
+    serves: [MOM-10, MOM-11]
+    initial: buscando
+    states:
+      buscando:
+        screen: SCR-BUSCA-TALENTO
+        must_render: [filtro_estilo, filtro_disponibilidade]
+        "on":
+          ABRIR_PERFIL: { target: vendo_perfil }
+
+      vendo_perfil:
+        screen: SCR-PERFIL-PUBLICO
+        answers: [FAQ-05]
+        must_render: [portfolio, indicador_disponivel_freelance, consentimento_explicito]
+        "on":
+          EVT-DisponibilidadeFreelanceAtivada: { target: vendo_perfil }
+          CONTATAR: { target: contato_iniciado, guard: VAL-DISPONIVEL-01 }
+
+      contato_iniciado:
+        screen: SCR-CONTATO-CONFIRMADO
+        invoke: CMD-IniciarContato
+        "on":
+          EVT-ContatoComercialIniciado: { target: aguardando_resposta }
+
+      aguardando_resposta:
+        screen: SCR-AGUARDANDO-RESPOSTA
+        must_render: [status_contato]
+
+validations:
+  - id: VAL-CONTEUDO-01
+    field: post.imagem
+    rule: "arquivo de imagem válido, não vazio; publicação bloqueada só se moderação automática sinalizar (POL-MOD-01), nunca por ausência de qualidade artística"
+    derived_from: POL-MOD-01
+  - id: VAL-DISPONIVEL-01
+    field: perfil.disponivel_freelance
+    rule: "criador precisa ter ativado 'disponível para freelance' antes de receber contato comercial"
+    derived_from: POL-CONTATO-01
+
+screens:
+  - { id: SCR-PROMPT,             components: [card-prompt-do-dia, contador-janela], tokens_scope: "pratica.*" }
+  - { id: SCR-EDITOR,              components: [editor-desenho, seletor-rascunho], tokens_scope: "pratica.*" }
+  - { id: SCR-PUBLICANDO,          components: [indicador-progresso], tokens_scope: "pratica.*" }
+  - { id: SCR-EM-REVISAO,          components: [aviso-revisao-card], tokens_scope: "pratica.*" }
+  - { id: SCR-FEED-PROPRIO-POST,   components: [post-card, contador-discreto], tokens_scope: "pratica.*" }
+  - { id: SCR-SEM-ENGAJAMENTO,     components: [oferta-feedback-card], tokens_scope: "pratica.*" }
+  - { id: SCR-FEEDBACK,            components: [comentario-card, badge-tecnico, contestar-marcacao], tokens_scope: "pratica.*" }
+  - { id: SCR-SEQUENCIA,           components: [indicador-sequencia, badge-pausa], tokens_scope: "perfil.*" }
+  - { id: SCR-RETOMADA,            components: [card-retomada, recorde-pessoal-chip], tokens_scope: "perfil.*" }
+  - { id: SCR-BUSCA-TALENTO,       components: [busca-estilo, filtro-disponibilidade], tokens_scope: "descoberta.*" }
+  - { id: SCR-PERFIL-PUBLICO,      components: [portfolio-grid, badge-disponivel], tokens_scope: "descoberta.*" }
+  - { id: SCR-CONTATO-CONFIRMADO,  components: [confirmacao-card], tokens_scope: "descoberta.*" }
+  - { id: SCR-AGUARDANDO-RESPOSTA, components: [status-contato-card], tokens_scope: "descoberta.*" }

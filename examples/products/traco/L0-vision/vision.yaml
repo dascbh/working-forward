@@ -1,0 +1,65 @@
+# Traço — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: traco
+
+customer:
+  primary:
+    id: CUST-CRIADOR
+    who: "ilustrador(a) iniciante ou hobbista que quer manter constância de prática e construir portfólio público"
+    context: "hoje posta esporadicamente em redes genéricas, sem estrutura que sustente hábito nem feedback técnico real"
+  secondary:
+    - id: CUST-CACADOR
+      who: "diretor(a) de arte ou recrutador(a) freelance buscando talento emergente"
+      context: "hoje descobre ilustradores só depois que já ficaram caros e disputados, via indicação pessoal, sem busca estruturada por técnica"
+
+problem:
+  - id: PROB-01
+    statement: "ilustradores abandonam a prática regular em poucas semanas por falta de estrutura de constância e de retorno"
+    severity: alta
+    evidence: "pesquisa interna com 140 ilustradores hobbistas: 68% abandonaram um desafio de prática diária (tipo Inktober) antes do dia 14"
+  - id: PROB-02
+    statement: "feedback recebido em redes sociais genéricas é quase todo genérico (curtida, emoji, 'lindo!') e raramente ajuda a melhorar a técnica"
+    severity: alta
+    evidence: "análise de 500 posts de ilustração em redes abertas: 91% dos comentários não continham nenhuma observação técnica específica"
+  - id: PROB-03
+    statement: "recrutadores de arte não conseguem descobrir talento emergente por técnica/estilo antes de ficar caro e disputado"
+    severity: media
+    evidence: "entrevista com 12 diretores de arte freelance: todos relatam depender de indicação pessoal, não de busca estruturada"
+
+solution_one_liner: "Um prompt diário, um feed pensado para prática e retorno técnico — não curtida vazia — e um jeito de ser descoberto por quem contrata, sem que a prática vire vitrine de venda."
+
+tenets:
+  - id: TEN-01
+    rule: "reação sem comentário nunca conta como retorno de qualidade — o produto distingue engajamento de feedback técnico"
+  - id: TEN-02
+    rule: "um hiato na prática nunca é punido de forma pública ou irreversível — constância real tem pausas"
+  - id: TEN-03
+    rule: "todo número de reputação exibido publicamente precisa ser reconstruível a partir do histórico de eventos — nunca um contador mudo"
+
+north_star:
+  metric: "criadores que postam em pelo menos 3 semanas distintas por mês"
+  target: "50% em 6 meses"
+
+hard_questions:
+  - id: FAQ-01
+    q: "o que conta como o momento em que ganhamos ou perdemos o criador — o post, a primeira reação, ou o padrão ao longo de semanas?"
+    owner_layer: L1
+  - id: FAQ-02
+    q: "quando dois comentaristas dão feedback técnico conflitante na mesma obra, o que o produto faz?"
+    owner_layer: L2
+  - id: FAQ-03
+    q: "quem é dono do número de reputação/sequência exibido no perfil — o contexto de prática que gera o evento, ou o contexto de reputação que exibe?"
+    owner_layer: L3
+  - id: FAQ-04
+    q: "quando um criador apaga um post que já tinha reações, a sequência e a reputação recalculam retroativamente?"
+    owner_layer: L2
+  - id: FAQ-05
+    q: "como o caçador de talento contata um criador sem que o produto vire canal de spam de recrutamento dentro do feed de prática?"
+    owner_layer: L4
+
+non_goals:
+  - id: NG-01
+    statement: "não é rede social genérica de qualquer tipo de conteúdo — só ilustração e prática de desenho, com prompt diário como âncora"
+  - id: NG-02
+    statement: "não é marketplace de venda de arte — não processa checkout nem comissão de venda dentro do produto"
+  - id: NG-03
+    statement: "não expõe publicamente quando um criador perde a sequência — constância não vira ranking de vergonha"

@@ -1,0 +1,93 @@
+# Traço — L3 domain.yaml
+events:
+  - { id: EVT-PostPublicado,               aggregate: AGG-Post,    emitted_by: CMD-PublicarPost }
+  - { id: EVT-PostSinalizadoModeracao,      aggregate: AGG-Post,    emitted_by: BCK-01 }
+  - { id: EVT-ReacaoRegistrada,             aggregate: AGG-Post,    emitted_by: CMD-ReagirPost }
+  - { id: EVT-ComentarioTecnicoRegistrado,  aggregate: AGG-Post,    emitted_by: BCK-08 }
+  - { id: EVT-SequenciaAtualizada,          aggregate: AGG-Perfil,  emitted_by: BCK-09 }
+  - { id: EVT-PostSemReacao72h,             aggregate: AGG-Post,    emitted_by: BCK-05 }
+  - { id: EVT-CriadorRetomouPratica,        aggregate: AGG-Perfil,  emitted_by: CMD-PublicarPost }
+  - { id: EVT-DisponibilidadeFreelanceAtivada, aggregate: AGG-Perfil, emitted_by: CMD-AtivarDisponibilidade }
+  - { id: EVT-ContatoComercialIniciado,     aggregate: AGG-Contato, emitted_by: CMD-IniciarContato }
+
+commands:
+  - { id: CMD-PublicarPost,          actor: ACT-CRIADOR,   produces: [EVT-PostPublicado, EVT-CriadorRetomouPratica] }
+  - { id: CMD-ReagirPost,            actor: ACT-COMUNIDADE, produces: [EVT-ReacaoRegistrada] }
+  - { id: CMD-ComentarFeedback,      actor: ACT-COMUNIDADE, produces: [] }   # o comentário bruto é classificado depois, de forma assíncrona, por BCK-08 — ver evento EVT-ComentarioTecnicoRegistrado
+  - { id: CMD-AtivarDisponibilidade, actor: ACT-CRIADOR,   produces: [EVT-DisponibilidadeFreelanceAtivada] }
+  - { id: CMD-IniciarContato,        actor: ACT-CACADOR,   produces: [EVT-ContatoComercialIniciado] }
+  - { id: CMD-RevisarModeracaoHumana,   actor: system, produces: [] }
+  - { id: CMD-RecalcularSequencia,      actor: system, produces: [EVT-SequenciaAtualizada] }
+  - { id: CMD-NotificarCriadorFeedback, actor: system, produces: [] }
+  - { id: CMD-OferecerFeedbackManual,   actor: system, produces: [] }
+  - { id: CMD-PreservarRecordePessoal,  actor: system, produces: [] }
+
+reactions:
+  - { id: RCT-01, when: EVT-PostSinalizadoModeracao,     then: CMD-RevisarModeracaoHumana,    implements: POL-MOD-01 }
+  - { id: RCT-02, when: EVT-PostPublicado,               then: CMD-RecalcularSequencia,       implements: POL-STREAK-01 }
+  - { id: RCT-03, when: EVT-ComentarioTecnicoRegistrado, then: CMD-NotificarCriadorFeedback,   implements: POL-FEEDBACK-01 }
+  # RCT-04 implementa só a metade "resolvida" do debate em EDG-09 (ver
+  # blueprint.yaml e NOTES.md) — o produto precisa de ALGUM comportamento
+  # default em produção; esta reaction existir não significa que o debate
+  # sobre forçar ou não feedback sintético foi encerrado.
+  - { id: RCT-04, when: EVT-PostSemReacao72h,            then: CMD-OferecerFeedbackManual,    implements: POL-COLDSTART-01 }
+  - { id: RCT-05, when: EVT-CriadorRetomouPratica,       then: CMD-PreservarRecordePessoal,   implements: POL-RETORNO-01 }
+
+aggregates:
+  - { id: AGG-Post,    invariants: [POL-PROMPT-01, POL-MOD-01, POL-FEEDBACK-01] }
+  - { id: AGG-Perfil,  invariants: [POL-STREAK-01, POL-RETORNO-01] }
+  - { id: AGG-Contato, invariants: [POL-CONTATO-01] }
+
+contexts:
+  - id: CTX-Pratica
+    aggregates: [AGG-Post]
+    moments_served: [MOM-01, MOM-02, MOM-03, MOM-04, MOM-06]
+
+  # ---------------------------------------------------------------------
+  # CTX-Reputacao — a fronteira contestada do produto (FAQ-03). NÃO forçamos
+  # isso em nenhum dos tipos "limpos" de relationship (shared-kernel,
+  # customer-supplier, downstream-conformist, upstream-published-language)
+  # porque nenhum dos dois times que revisaram esta camada concordou, e
+  # forçar um rótulo limpo aqui seria exatamente o "rubber stamp" que este
+  # produto existe para NÃO fazer. O campo `type` do schema é uma string
+  # livre — usamos isso para registrar o estado real: contestado.
+  #
+  # POSIÇÃO A — shared-kernel de fato (escrita síncrona):
+  #   CMD-PublicarPost e CMD-ReagirPost escrevem diretamente nos contadores
+  #   de AGG-Perfil (sequência/reputação) na mesma transação que registram o
+  #   post/reação. Vantagem: MOM-03 ("esperar a primeira reação") e MOM-05
+  #   ("ver a sequência") ficam com atualização instantânea — que é
+  #   justamente o que sustenta a emoção-alvo desses momentos. Desvantagem:
+  #   dois contextos passam a co-possuir os invariantes de AGG-Perfil, o que
+  #   acopla deploy de CTX-Pratica e CTX-Reputacao, e cria exatamente o tipo
+  #   de escrita cruzada de fronteira que o DDD clássico considera cheiro —
+  #   e o caso de EDG-14 (post apagado que já tinha reações) exige uma
+  #   escrita compensatória que, se AGG-Post e AGG-Perfil vivem em serviços
+  #   diferentes, precisa de coordenação distribuída para não divergir.
+  #
+  # POSIÇÃO B — customer-supplier / downstream-conformist (assíncrono):
+  #   CTX-Reputacao assina os eventos de CTX-Pratica (EVT-PostPublicado,
+  #   EVT-ReacaoRegistrada, EVT-ComentarioTecnicoRegistrado) e recalcula sua
+  #   própria projeção, eventualmente consistente. Vantagem: fronteiras
+  #   limpas, TEN-03 (reputação reconstruível a partir do log de eventos) sai
+  #   de graça, e é o padrão usado em todos os outros produtos deste
+  #   repositório (ver aurora-tax, ponte). Desvantagem: introduz um atraso —
+  #   segundos a minutos, dependendo da fila — exatamente no momento em que
+  #   a jornada mais precisa de resposta imediata (MOM-03 é um dos quatro
+  #   candidatos a truth_moment da jornada). Um atraso perceptível ali
+  #   contradiz a emoção-alvo "ansiedade → alívio" que o produto tenta servir.
+  #
+  # STATUS: sem resolução. A revisão de arquitetura (L2→L3, o gate mais caro
+  # do pipeline segundo o reference guide) terminou em empate — engenharia
+  # sênior dividida ao meio. Ver NOTES.md para o registro completo do debate
+  # e por que decidimos documentar o impasse em vez de forçar uma escolha
+  # artificial só para este exemplo "fechar limpo".
+  - id: CTX-Reputacao
+    aggregates: [AGG-Perfil]
+    moments_served: [MOM-05, MOM-07]
+    relationship: { with: CTX-Pratica, type: "contestado (FAQ-03) — shared-kernel de escrita síncrona vs. customer-supplier assíncrono, sem decisão — ver NOTES.md" }
+
+  - id: CTX-Descoberta
+    aggregates: [AGG-Contato]
+    moments_served: [MOM-10, MOM-11]
+    relationship: { with: CTX-Pratica, type: downstream-conformist }   # este, em contraste, não é contestado: descoberta só lê o portfólio público de CTX-Pratica, nunca escreve nele

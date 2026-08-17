@@ -1,0 +1,140 @@
+# Traço — L2 blueprint.yaml
+#
+# NOTA: os edge cases estão deliberadamente concentrados em MOM-02/MOM-03
+# (o coração do loop) e quase ausentes em MOM-10/MOM-11 (a jornada linear de
+# descoberta). Isso reflete onde o domínio real tem iceberg — não é um
+# artefato de preguiça na jornada curta. Ver NOTES.md.
+blueprints:
+  - moment_ref: MOM-02
+    frontstage:
+      - "editor de post com o prompt do dia fixado no topo"
+      - "opção de marcar o post como rascunho privado antes de publicar"
+    backstage:
+      - { id: BCK-01, action: "moderação automática de conteúdo (NSFW/plágio óbvio) antes de publicar", sla_ms: 3000 }
+    policies:
+      - id: POL-PROMPT-01
+        rule: "post só é vinculado ao prompt do dia se publicado dentro da janela de 48h — depois conta como post livre, sem impacto na sequência"
+        source: TEN-02
+        on_violation: "post é aceito mas exibido como 'fora do prompt'; a sequência não computa esse post"
+      - id: POL-MOD-01
+        rule: "post sinalizado pela moderação automática não aparece no feed público até revisão humana ou até 2h, o que vier primeiro"
+        on_violation: "post fica em estado 'em revisão' e não é listado em nenhum feed de descoberta"
+    edge_cases:
+      - id: EDG-01
+        case: "criador posta a mesma imagem em dois prompts diferentes (reposição)"
+        resolution: "aceitar, mas marcar como repost — não conta para a sequência nem entra no feed de descoberta"
+        severity: baixa
+      - id: EDG-02
+        case: "moderação automática sinaliza falso positivo (ex: arte com nudez artística clássica marcada como NSFW)"
+        resolution: "post fica em revisão humana em até 2h, autor é notificado do motivo, e o tempo em revisão não conta contra a janela do prompt (POL-PROMPT-01)"
+        severity: media
+      - id: EDG-14
+        case: "criador apaga um post que já tinha reações e feedback técnico contabilizados — FAQ-04"
+        resolution: "sequência e reputação NÃO recalculam retroativamente — a prática já aconteceu; a exclusão remove o post dos feeds mas preserva o crédito de constância já concedido"
+        severity: media
+
+  - moment_ref: MOM-03
+    frontstage:
+      - "contador de visualizações discreto; nenhum contador de reações visível publicamente até a primeira reação chegar (evita post com '0' à mostra)"
+    backstage:
+      - { id: BCK-05, action: "ranking do feed de descoberta decide quem vê o post primeiro (cold start para quem não tem seguidores)", sla_ms: 0 }
+    policies:
+      - id: POL-COLDSTART-01
+        rule: "todo post novo recebe pelo menos uma janela garantida de exposição no feed de descoberta de quem segue prompts similares, mesmo sem seguidores"
+        source: PROB-01
+        on_violation: "post é reenfileirado automaticamente na fila prioritária de descoberta"
+    edge_cases:
+      - id: EDG-03
+        case: "post não recebe nenhuma reação em 72h mesmo com a exposição garantida de POL-COLDSTART-01"
+        resolution: "sistema oferece 'pedir feedback' manual — encaminha o post a um criador da comunidade que topou receber pedidos assim; amortece o sintoma, não resolve a causa (ver EDG-09)"
+        severity: alta
+      - id: EDG-04
+        case: "post recebe só reações em massa com padrão de bot/farm de engajamento"
+        resolution: "reações suspeitas são filtradas do contador público silenciosamente, sem notificar o autor de que houve suspeita (evita alarme falso constante)"
+        severity: media
+      # EDG-09 é DELIBERADAMENTE deixado sem `resolution` e sem `accepted_risk`.
+      # O schema (blueprint.schema.json) exige um dos dois via `anyOf` — este
+      # item VAI FALHAR na validação de schema, de propósito. É a
+      # representação honesta de um debate de produto real e não resolvido,
+      # não um erro de preenchimento. Ver NOTES.md, seção "EDG-09".
+      - id: EDG-09
+        case: >
+          criador pratica com constância mas nunca recebe nenhuma reação orgânica
+          por semanas — o produto deveria forçar feedback sintético (ex: fila de
+          'pedir comentário' automática, como em EDG-03) ou aceitar o risco de
+          churn silencioso e deixar o feedback ser só o que é autêntico?
+        severity: alta
+        contested:
+          posicao_a: "forçar feedback (fila de 'pedir comentário') resolve o sintoma de curto prazo, mas educa o criador a esperar validação artificial — contradiz TEN-01 (reação sem comentário não conta) e o espírito de retorno honesto"
+          posicao_b: "não forçar nada preserva a autenticidade do feedback, mas deixa exatamente o criador que mais precisa de acolhimento (iniciante, sem rede) sem nenhum sinal de retorno — é o cenário mais citado em PROB-01 como causa de abandono"
+          status: "sem resolução — nenhuma das duas posições foi testada; EDG-03 implementa uma versão fraca da posição A como default operacional provisório, sem que isso signifique que o debate foi encerrado"
+
+  - moment_ref: MOM-04
+    frontstage:
+      - "comentário pode ser marcado pelo autor do comentário como 'feedback técnico' (peso diferente de apoio emocional genérico)"
+    backstage:
+      - { id: BCK-08, action: "classificação do comentário como feedback técnico vs. genérico, via heurística + confirmação de quem comentou" }
+    policies:
+      - id: POL-FEEDBACK-01
+        rule: "só comentário marcado como feedback técnico conta pra métrica de retorno de qualidade do criador — reação (like) sozinha nunca conta"
+        source: TEN-01
+        on_violation: "métrica de retorno de qualidade do post não incrementa"
+    edge_cases:
+      - id: EDG-10
+        case: "comentário técnico mal-intencionado disfarçado de crítica construtiva (concern trolling)"
+        resolution: "autor do post pode contestar a marcação de 'feedback técnico'; três contestações de autores diferentes tiram o peso de reputação desse comentarista"
+        severity: media
+      - id: EDG-13
+        case: "dois comentaristas dão feedback técnico conflitante na mesma obra (ex: 'melhore a anatomia' vs. 'a anatomia estilizada é a assinatura do seu traço') — FAQ-02"
+        resolution: "o produto não arbitra qual feedback está tecnicamente certo — exibe ambos, ordenados por quantos 'isso me ajudou' o próprio autor do post marcar, nunca por votação pública"
+        severity: baixa
+
+  - moment_ref: MOM-05
+    frontstage:
+      - "indicador de sequência visível só para o próprio criador — nunca comparado publicamente com o de outros criadores"
+    backstage:
+      - { id: BCK-09, action: "recomputa a sequência a cada post considerando a janela do prompt (POL-PROMPT-01)" }
+    policies:
+      - id: POL-STREAK-01
+        rule: "sequência quebrada nunca reseta pra zero de forma visível de uma vez — degrada suavemente para 'pausa' antes de zerar após 14 dias sem post"
+        source: TEN-02
+        on_violation: "reset abrupto para zero é bloqueado; o contador sempre passa pelo estado intermediário 'pausa'"
+    edge_cases:
+      - id: EDG-11
+        case: "criador em fuso horário diferente do servidor discorda se um post 'contou' pro dia certo"
+        resolution: "a sequência usa o fuso horário declarado no perfil do criador, não o do servidor"
+        severity: baixa
+
+  - moment_ref: MOM-07
+    frontstage:
+      - "ao voltar depois de um hiato, a tela de retomada não cobra nada — mostra só o prompt de hoje, não o histórico de dias perdidos"
+    backstage:
+      - { id: BCK-12, action: "notificação de reengajamento enviada em D+3, D+10 e D+30 de inatividade, com tom decrescente de urgência" }
+    policies:
+      - id: POL-RETORNO-01
+        rule: "nenhuma notificação de reengajamento usa linguagem de perda ou culpa (ex: 'você está perdendo sua sequência')"
+        source: NG-03
+        on_violation: "notificação é bloqueada por revisão de copy antes do envio"
+    edge_cases:
+      - id: EDG-12
+        case: "criador que sumiu por mais de 90 dias volta e vê a sequência antiga zerada, o que gera sensação de 'começar do zero' desmotivadora"
+        resolution: "a sequência antiga é preservada como 'recorde pessoal' separado da sequência atual, exibido só se o criador optar por ver"
+        severity: media
+
+  - moment_ref: MOM-10
+    frontstage:
+      - "busca por técnica/estilo, com filtro de disponibilidade para freelance"
+    backstage:
+      - { id: BCK-20, action: "índice de busca por estilo visual (embedding de imagem)", sla_ms: 1500 }
+    # deliberadamente sem policies/edge_cases: contraste com MOM-02/MOM-03 —
+    # esta jornada é curta e transacional, e não tem o mesmo iceberg.
+
+  - moment_ref: MOM-11
+    frontstage:
+      - "botão 'disponível para freelance' é opt-in explícito no perfil do criador — sem esse opt-in, não existe botão de contato"
+    backstage: []   # deliberadamente vazio: MOM-11 não tem processamento de backstage relevante, só o gate de opt-in — contraste com o iceberg de MOM-02/MOM-03
+    policies:
+      - id: POL-CONTATO-01
+        rule: "caçador de talento só pode iniciar contato comercial se o criador tiver ativado 'disponível para freelance' no perfil"
+        source: FAQ-05
+        on_violation: "botão de contato não aparece; tentativa de contato fora desse fluxo é reportável como spam"
