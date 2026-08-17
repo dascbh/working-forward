@@ -1,0 +1,65 @@
+# Mandato — L3 domain.yaml
+events:
+  - { id: EVT-MandatoPublicado,    aggregate: AGG-Mandato,    emitted_by: CMD-PublicarMandato }
+  - { id: EVT-MandatoAceito,       aggregate: AGG-Mandato,    emitted_by: CMD-AceitarMandato }
+  - { id: EVT-AcaoExecutada,       aggregate: AGG-Execucao,   emitted_by: BCK-21 }
+  - { id: EVT-ExtensaoSolicitada,  aggregate: AGG-Execucao,   emitted_by: BCK-23 }
+  - { id: EVT-ExtensaoRespondida,  aggregate: AGG-Execucao,   emitted_by: CMD-ResponderExtensao }
+  - { id: EVT-ResultadoEntregue,   aggregate: AGG-Mandato,    emitted_by: CMD-EntregarResultado }
+  - { id: EVT-ResultadoVerificado, aggregate: AGG-Escrow,     emitted_by: BCK-11 }
+  - { id: EVT-EscrowLiberado,      aggregate: AGG-Escrow,     emitted_by: BCK-12 }
+  - { id: EVT-DisputaAberta,       aggregate: AGG-Disputa,    emitted_by: BCK-31 }
+  - { id: EVT-DisputaResolvida,    aggregate: AGG-Disputa,    emitted_by: BCK-32 }
+  - { id: EVT-ReputacaoAtualizada, aggregate: AGG-Reputacao,  emitted_by: BCK-03 }
+
+commands:
+  - { id: CMD-PublicarMandato,     actor: ACT-MANDANTE, produces: [EVT-MandatoPublicado] }
+  - { id: CMD-AceitarMandato,      actor: ACT-OPERADOR, produces: [EVT-MandatoAceito] }
+  - { id: CMD-ExecutarAcao,        actor: ACT-AGENTE,   produces: [EVT-AcaoExecutada] }
+  - { id: CMD-ResponderExtensao,   actor: ACT-MANDANTE, produces: [EVT-ExtensaoRespondida] }
+  - { id: CMD-EntregarResultado,   actor: ACT-AGENTE,   produces: [EVT-ResultadoEntregue] }
+  - { id: CMD-VerificarResultado,  actor: system,        produces: [EVT-ResultadoVerificado] }
+  - { id: CMD-LiberarEscrow,       actor: system,        produces: [EVT-EscrowLiberado] }
+  - { id: CMD-AbrirDisputa,        actor: ACT-MANDANTE, produces: [EVT-DisputaAberta] }
+  - { id: CMD-ResolverDisputa,     actor: system,        produces: [EVT-DisputaResolvida] }
+  - { id: CMD-AtualizarReputacao,  actor: system,        produces: [EVT-ReputacaoAtualizada] }
+  - { id: CMD-NotificarMandante,   actor: system,        produces: [] }
+  - { id: CMD-SinalizarConflito,   actor: system,        produces: [] }
+
+reactions:
+  - { id: RCT-01, when: EVT-MandatoAceito,       then: CMD-ExecutarAcao,       implements: POL-TETO-01 }
+  - { id: RCT-02, when: EVT-ExtensaoSolicitada,  then: CMD-NotificarMandante,  implements: POL-EXT-01 }
+  - id: RCT-03
+    when: EVT-ExtensaoSolicitada
+    then: CMD-SinalizarConflito
+    implements: POL-EXT-01
+    note: "reconciliação entre mandatos concorrentes do mesmo mandante — nunca aprovação automática de ambos — FAQ-04"
+  - { id: RCT-04, when: EVT-ResultadoEntregue,   then: CMD-VerificarResultado, implements: POL-VERIF-01 }
+  - { id: RCT-05, when: EVT-ResultadoVerificado, then: CMD-LiberarEscrow,      implements: POL-VERIF-01 }
+  - { id: RCT-06, when: EVT-DisputaAberta,       then: CMD-ResolverDisputa,    implements: POL-DISP-01 }
+  - { id: RCT-07, when: EVT-DisputaResolvida,    then: CMD-AtualizarReputacao, implements: POL-REP-01 }
+  - { id: RCT-08, when: EVT-EscrowLiberado,      then: CMD-AtualizarReputacao, implements: POL-REP-01 }
+
+aggregates:
+  - { id: AGG-Mandato,    invariants: [POL-ESCOPO-01, POL-EXT-01] }
+  - { id: AGG-Execucao,   invariants: [POL-TETO-01] }
+  - { id: AGG-Escrow,     invariants: [POL-VERIF-01] }
+  - { id: AGG-Disputa,    invariants: [POL-DISP-01] }
+  - { id: AGG-Reputacao,  invariants: [POL-REP-01] }
+
+contexts:
+  - id: CTX-Mandato
+    aggregates: [AGG-Mandato, AGG-Execucao]
+    moments_served: [MOM-01, MOM-10, MOM-11, MOM-12]
+  - id: CTX-Pagamento
+    aggregates: [AGG-Escrow]
+    moments_served: [MOM-04, MOM-05]
+    relationship: { with: CTX-Mandato, type: upstream-published-language }
+  - id: CTX-Confianca
+    aggregates: [AGG-Reputacao]
+    moments_served: [MOM-02]
+    relationship: { with: CTX-Pagamento, type: downstream-conformist }
+  - id: CTX-Disputa
+    aggregates: [AGG-Disputa]
+    moments_served: [MOM-20, MOM-21]
+    relationship: { with: CTX-Pagamento, type: customer-supplier }

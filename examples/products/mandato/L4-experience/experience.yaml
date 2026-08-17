@@ -1,0 +1,155 @@
+# Mandato — L4 experience.yaml
+flows:
+  - id: FLW-DELEGAR
+    serves: [MOM-01, MOM-02, MOM-04, MOM-05]
+    initial: compondo
+    states:
+      compondo:
+        screen: SCR-EDITOR-MANDATO
+        on:
+          PUBLICAR: { target: validando, guard: VAL-MANDATO-01 }
+      validando:
+        screen: SCR-EDITOR-MANDATO
+        invoke: CMD-PublicarMandato
+        on:
+          EVT-MandatoPublicado: { target: aguardando_operador }
+          CRITERIO_INSUFICIENTE: { target: refinando, covers: [EDG-01] }
+      refinando:
+        screen: SCR-REFINAR-CRITERIO
+        covers: [EDG-01]
+        must_render: [perguntas_refinamento]
+        on:
+          PUBLICAR: { target: validando, guard: VAL-MANDATO-01 }
+      aguardando_operador:
+        screen: SCR-VITRINE-OPERADORES
+        covers: [EDG-02, EDG-03]
+        must_render: [reputacao_verificada, taxa_conclusao, badge_operador_emergente]
+        on:
+          ESCOLHER: { target: mandato_ativo }
+      mandato_ativo:
+        screen: SCR-ACOMPANHAMENTO
+        # a execução em si acontece em FLW-EXECUCAO; este estado observa o mandato até a entrega
+        on:
+          EVT-ResultadoEntregue: { target: verificando }
+      verificando:
+        screen: SCR-VERIFICACAO
+        invoke: CMD-VerificarResultado
+        on:
+          EVT-ResultadoVerificado: { target: liberado }
+          RESULTADO_PARCIAL: { target: liberado_parcial, covers: [EDG-05] }
+          RESULTADO_CONTESTADO: { target: em_disputa, covers: [EDG-04] }
+      liberado_parcial:
+        screen: SCR-VERIFICACAO
+        covers: [EDG-05]
+        must_render: [percentual_liberado, saldo_retido]
+        on:
+          COMPLETAR: { target: verificando }
+          CONTESTAR: { target: em_disputa, covers: [EDG-04] }
+      em_disputa:
+        screen: SCR-DISPUTA-STATUS
+        covers: [EDG-04]
+        invoke: CMD-AbrirDisputa
+        on:
+          EVT-DisputaResolvida: { target: liberado }
+      liberado:
+        screen: SCR-CONCLUSAO
+        must_render: [resumo_execucao, escrow_liberado]
+        on:
+          EVT-ReputacaoAtualizada: { target: liberado }
+
+  - id: FLW-EXECUCAO
+    serves: [MOM-03, MOM-10, MOM-11, MOM-12]
+    initial: agindo
+    states:
+      agindo:
+        screen: SCR-MONITOR
+        invoke: CMD-ExecutarAcao
+        answers: [FAQ-03]
+        must_render: [linha_do_tempo_acoes, orcamento_consumido, proximo_checkpoint_previsto]
+        on:
+          EVT-AcaoExecutada: { target: checkpoint }
+          NECESSITA_EXTENSAO: { target: aguardando_resposta_extensao, covers: [EDG-06] }
+          DEPENDENCIA_EXTERNA: { target: bloqueado_dependencia, covers: [EDG-07] }
+      checkpoint:
+        screen: SCR-MONITOR
+        must_render: [checkpoint_registrado]
+        on:
+          CONTINUAR: { target: agindo }
+          TAREFA_CONCLUIDA: { target: entregando }
+      bloqueado_dependencia:
+        screen: SCR-MONITOR
+        covers: [EDG-07]
+        must_render: [aviso_bloqueio, retry_programado]
+        on:
+          RETOMAR: { target: agindo }
+      aguardando_resposta_extensao:
+        screen: SCR-EXTENSAO
+        covers: [EDG-06, EDG-09]
+        must_render: [pedido_extensao, custo_adicional, alerta_conflito_quando_aplicavel]
+        on:
+          RESPONDER: { target: registrando_resposta, guard: VAL-EXTENSAO-01 }
+          PRAZO_EXPIRADO: { target: pausado_expirado, covers: [EDG-08] }
+      registrando_resposta:
+        screen: SCR-EXTENSAO
+        invoke: CMD-ResponderExtensao
+        on:
+          EVT-ExtensaoRespondida: { target: agindo }
+      pausado_expirado:
+        screen: SCR-EXTENSAO
+        covers: [EDG-08]
+        must_render: [mandato_pausado, retomar_a_qualquer_momento]
+        on:
+          RETOMAR: { target: agindo }
+      entregando:
+        screen: SCR-MONITOR
+        invoke: CMD-EntregarResultado
+
+  - id: FLW-DISPUTA
+    serves: [MOM-20, MOM-21]
+    initial: contestando
+    states:
+      contestando:
+        screen: SCR-CONTESTACAO
+        on:
+          ENVIAR: { target: aberta, guard: VAL-DISPUTA-01 }
+      aberta:
+        screen: SCR-DISPUTA-STATUS
+        invoke: CMD-AbrirDisputa
+        on:
+          EVT-DisputaAberta: { target: arbitragem }
+      arbitragem:
+        screen: SCR-ARBITRAGEM
+        covers: [EDG-10, EDG-11]
+        must_render: [log_execucao, evidencia_checkpoints, limite_apolice_quando_aplicavel]
+        on:
+          EVT-DisputaResolvida: { target: resolvida }
+      resolvida:
+        screen: SCR-DISPUTA-STATUS
+        must_render: [decisao_final, valor_liberado_ou_ressarcido]
+
+validations:
+  - id: VAL-MANDATO-01
+    field: "mandato.criterio_sucesso, mandato.orcamento_teto"
+    rule: "ambos obrigatórios; critério mensurável (unidade + limiar definidos); orçamento numérico > 0 com moeda definida"
+    derived_from: POL-ESCOPO-01
+  - id: VAL-EXTENSAO-01
+    field: extensao.decisao
+    rule: "mandante deve aprovar ou negar explicitamente — sem opção de default silencioso"
+    derived_from: POL-EXT-01
+  - id: VAL-DISPUTA-01
+    field: contestacao.evidencia
+    rule: "deve referenciar item específico do critério de sucesso não cumprido, com evidência anexada"
+    derived_from: POL-DISP-01
+
+screens:
+  - { id: SCR-EDITOR-MANDATO,     components: [editor-escopo, editor-orcamento, editor-criterio-sucesso], tokens_scope: "mandato.*" }
+  - { id: SCR-REFINAR-CRITERIO,   components: [perguntas-refinamento, sugestao-criterio], tokens_scope: "mandato.*" }
+  - { id: SCR-VITRINE-OPERADORES, components: [lista-operadores, reputacao-badge, badge-emergente], tokens_scope: "mandato.*" }
+  - { id: SCR-ACOMPANHAMENTO,     components: [resumo-mandato, atalho-monitor], tokens_scope: "mandato.*" }
+  - { id: SCR-VERIFICACAO,        components: [comparador-criterio-resultado, selo-verificacao, botao-confirmar], tokens_scope: "mandato.*" }
+  - { id: SCR-CONCLUSAO,          components: [resumo-execucao, recibo-escrow], tokens_scope: "mandato.*" }
+  - { id: SCR-MONITOR,            components: [linha-do-tempo, medidor-orcamento, proximo-checkpoint], tokens_scope: "execucao.*" }
+  - { id: SCR-EXTENSAO,           components: [pedido-extensao-card, alerta-conflito, cta-aprovar-negar], tokens_scope: "execucao.*" }
+  - { id: SCR-CONTESTACAO,        components: [formulario-contestacao, anexo-evidencia], tokens_scope: "disputa.*" }
+  - { id: SCR-DISPUTA-STATUS,     components: [status-disputa-card, prazo-arbitragem], tokens_scope: "disputa.*" }
+  - { id: SCR-ARBITRAGEM,         components: [visualizador-log, comparador-criterio, badge-limite-apolice], tokens_scope: "disputa.*" }

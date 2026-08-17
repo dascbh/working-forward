@@ -1,0 +1,94 @@
+# Mandato — L1 journey.yaml
+actors:
+  - { id: ACT-MANDANTE, name: "Mandante", persona_ref: CUST-MANDANTE }
+  - { id: ACT-OPERADOR, name: "Operador do agente", persona_ref: CUST-OPERADOR }
+  - { id: ACT-AGENTE, name: "Agente autônomo" }   # não é persona humana — ator de sistema com autoridade delegada
+
+journeys:
+  - id: JRN-DELEGAR
+    actor: ACT-MANDANTE
+    trigger: "mandante tem uma tarefa complexa e mensurável que hoje faz manualmente ou terceiriza com fricção"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Definir o mandato"
+        intent: "traduzir a tarefa em escopo, orçamento-teto e critério de sucesso verificável"
+        emotion_target: clareza
+        channel: [web]
+        truth_moment: false
+        vision_refs: [PROB-01, NG-02]
+      - id: MOM-02
+        name: "Escolher o operador"
+        intent: "comparar operadores por reputação verificada, especialidade e preço"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-02]
+      - id: MOM-04
+        name: "Verificar o resultado"
+        intent: "confirmar que o critério de sucesso foi cumprido antes de liberar o pagamento"
+        emotion_target: segurança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-02, PROB-01]
+      - id: MOM-05
+        name: "Liberar ou contestar o pagamento"
+        intent: "decidir com base na verificação, não na promessa"
+        emotion_target: controle
+        channel: [web]
+        truth_moment: false
+        vision_refs: [TEN-02]
+
+  - id: JRN-EXECUTAR
+    actor: ACT-AGENTE
+    trigger: "mandato aceito por um operador — o agente inicia a execução autônoma"
+    shape: loop        # execução contínua, sem fim narrativo fixo — não é uma jornada transacional
+    moments:
+      - id: MOM-03
+        name: "Acompanhar a execução ao vivo"
+        intent: "dar ao mandante visibilidade contínua de cada ação relevante do agente, sem exigir vigilância"
+        emotion_target: tranquilidade
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-03, FAQ-03]
+      - id: MOM-10
+        name: "Agir dentro do escopo"
+        intent: "executar o próximo passo da tarefa sem exceder a autoridade do mandato"
+        emotion_target: confiabilidade
+        channel: [web]
+        truth_moment: false
+        vision_refs: [TEN-01]
+      - id: MOM-11
+        name: "Pedir autorização para exceder o escopo"
+        intent: "quando a tarefa exige uma ação fora do mandato original, pausar e solicitar extensão explícita"
+        emotion_target: segurança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-01, FAQ-01]
+      - id: MOM-12
+        name: "Registrar checkpoint verificável"
+        intent: "deixar rastro auditável de cada ação relevante, sem exigir leitura constante do mandante"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: false
+        vision_refs: [TEN-03]
+
+  - id: JRN-DISPUTAR
+    actor: ACT-MANDANTE
+    trigger: "resultado verificado como incompleto/incorreto, ou dano a terceiro identificado durante a execução"
+    shape: linear
+    moments:
+      - id: MOM-20
+        name: "Contestar o resultado"
+        intent: "registrar formalmente onde o critério de sucesso não foi cumprido"
+        emotion_target: assertividade
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-02]
+      - id: MOM-21
+        name: "Acionar arbitragem"
+        intent: "resolver a disputa com base em evidência de execução, não na palavra do operador"
+        emotion_target: justiça
+        channel: [web]
+        truth_moment: true
+        vision_refs: [FAQ-02, PROB-01]

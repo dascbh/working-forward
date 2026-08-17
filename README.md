@@ -33,7 +33,8 @@ skills/                      Skills para clientes de IA (Claude, etc.) — uma p
 examples/artifacts/          Exemplos mínimos comentados, por camada
 examples/products/           Pseudo-produtos completos, L0→L5
   ├── aurora-tax/            B2B — plataforma de inteligência tributária
-  └── agendai/               B2C — agendamento para barbearias
+  ├── agendai/               B2C — agendamento para barbearias
+  └── mandato/               marketplace — infraestrutura de confiança para agentes de IA autônomos
 ```
 
 ## Quickstart

@@ -1,0 +1,46 @@
+# Mandato — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: mandato
+customer:
+  primary:
+    id: CUST-MANDANTE
+    who: "empresa ou profissional que precisa delegar uma tarefa complexa e mensurável a um agente autônomo"
+    context: "hoje entrega chave de API ou cartão corporativo a um agente e torce, sem trava de escopo, orçamento ou verificação"
+  secondary:
+    - id: CUST-OPERADOR
+      who: "operador/desenvolvedor de agente de IA que vende a capacidade do seu agente no marketplace"
+      context: "tem um agente competente mas não consegue vender confiança — o comprador não tem como verificar antes de pagar"
+
+problem:
+  - id: PROB-01
+    statement: "empresas já delegam tarefas consequentes (compras, negociação, operações) a agentes de IA sem qualquer camada de custódia, verificação ou responsabilização"
+    severity: alta
+    evidence: "entrevistas com 14 times que operam agentes em produção; 11 relatam ao menos um incidente de ação fora de escopo nos últimos 6 meses"
+  - id: PROB-02
+    statement: "operadores de agentes de qualidade não conseguem vender confiança — o comprador paga adiantado sem garantia de que o resultado será verificável"
+    severity: alta
+    evidence: "pesquisa com 40 operadores de agente: 68% citam 'falta de confiança do comprador' como principal barreira de venda"
+
+solution_one_liner: "Delegar uma tarefa a um agente de IA com o rigor de um contrato: escopo e orçamento travados, pagamento em custódia liberado só quando o resultado é verificado."
+
+tenets:
+  - id: TEN-01
+    rule: "nenhuma ação de agente fora do escopo do mandato é executada — o mandato é o teto de autoridade, não uma sugestão"
+  - id: TEN-02
+    rule: "pagamento só libera mediante verificação do resultado, nunca por confiança na promessa do agente"
+  - id: TEN-03
+    rule: "toda ação relevante do agente fica registrada e auditável pelo mandante em tempo real"
+
+north_star:
+  metric: "mandatos concluídos com escrow liberado sem disputa"
+  target: "85% em 12 meses"
+
+hard_questions:
+  - { id: FAQ-01, q: "o que acontece quando o agente tenta uma ação fora do escopo do mandato?", owner_layer: L2 }
+  - { id: FAQ-02, q: "quem é responsável — e paga — quando o agente causa dano a terceiro durante a execução?", owner_layer: L2 }
+  - { id: FAQ-03, q: "como o mandante sabe, em tempo real, que o agente está agindo dentro do combinado, sem precisar vigiar a tela?", owner_layer: L4 }
+  - { id: FAQ-04, q: "e se dois mandatos do mesmo mandante pedirem ações conflitantes ao mesmo tempo?", owner_layer: L3 }
+  - { id: FAQ-05, q: "como um operador novo, sem histórico, consegue o primeiro mandato?", owner_layer: L2 }
+
+non_goals:
+  - { id: NG-01, statement: "não é ferramenta de criação/treinamento de agentes — o operador traz o agente pronto e certificado" }
+  - { id: NG-02, statement: "não intermedia mandato sem orçamento-teto e critério de sucesso explícitos e mensuráveis no momento da criação" }
