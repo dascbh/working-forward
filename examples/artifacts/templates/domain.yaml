@@ -1,0 +1,14 @@
+# L3 — domain.yaml (schema: schemas/domain.schema.json)
+events:
+  - { id: EVT-CoisaAconteceu, aggregate: AGG-Coisa, emitted_by: BCK-01 }  # passado!
+commands:
+  - { id: CMD-FazerCoisa, actor: ACT-X, produces: [EVT-CoisaAconteceu] }
+reactions:
+  - { id: RCT-01, when: EVT-CoisaAconteceu, then: CMD-FazerCoisa, implements: POL-X-01 }
+aggregates:
+  - { id: AGG-Coisa, invariants: [POL-X-01] }
+contexts:
+  - id: CTX-Principal
+    aggregates: [AGG-Coisa]
+    moments_served: [MOM-01]
+    # relationship: { with: CTX-Outro, type: upstream-published-language }

@@ -1,0 +1,20 @@
+# L0 — vision.yaml (extraído do prfaq.md; schema: schemas/vision.schema.json)
+product: meu-produto            # slug kebab-case
+customer:
+  primary:
+    id: CUST-X                  # a PESSOA que mais sofre o problema
+    who: ""
+    context: ""
+problem:
+  - id: PROB-01
+    statement: ""
+    severity: alta              # alta | media | baixa
+    evidence: ""                # como você SABE que dói
+solution_one_liner: ""          # ≤280 chars, leigo entende
+tenets:
+  - { id: TEN-01, rule: "" }    # princípio que corta decisões
+north_star: { metric: "", target: "" }
+hard_questions:
+  - { id: FAQ-01, q: "", owner_layer: L2 }   # camada que DEVE responder
+non_goals:
+  - { id: NG-01, statement: "" }

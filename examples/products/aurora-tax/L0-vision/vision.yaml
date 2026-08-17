@@ -1,0 +1,50 @@
+# Aurora Tax — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: aurora-tax
+customer:
+  primary:
+    id: CUST-ADV
+    who: "advogado tributarista sênior em escritório de médio/grande porte"
+    context: "atende consultas de clientes corporativos sobre a transição IBS/CBS"
+  secondary:
+    - id: CUST-EST
+      who: "estagiário/associado júnior"
+      context: "faz a triagem e a pesquisa preliminar das consultas"
+
+problem:
+  - id: PROB-01
+    statement: "monitorar 40+ normas/semana manualmente consome horas de profissional sênior"
+    severity: alta
+    evidence: "entrevistas com 6 tributaristas; média autodeclarada de 5h/semana"
+  - id: PROB-02
+    statement: "respostas a clientes citam normas de memória, sem trilha auditável"
+    severity: alta
+    evidence: "revisão de 20 pareceres: 30% com citação desatualizada ou incompleta"
+
+solution_one_liner: "Consultas tributárias respondidas em minutos, com cada afirmação fundamentada em dispositivo normativo verificado e clicável."
+
+tenets:
+  - id: TEN-01
+    rule: "na dúvida, citar a fonte normativa — nunca parafrasear sem link verificado"
+  - id: TEN-02
+    rule: "recusar com elegância é melhor que responder fora do escopo"
+
+north_star:
+  metric: "consultas resolvidas sem escalação humana adicional"
+  target: "70% em 12 meses"
+
+hard_questions:
+  - id: FAQ-07
+    q: "o que acontece quando duas normas conflitam?"
+    owner_layer: L2
+  - id: FAQ-11
+    q: "e quando a norma foi publicada há menos de 24h e a base ainda não indexou?"
+    owner_layer: L2
+  - id: FAQ-13
+    q: "como evitamos que o produto vire ferramenta de peticionamento?"
+    owner_layer: L4
+
+non_goals:
+  - id: NG-01
+    statement: "não é ferramenta de peticionamento nem gera peças processuais"
+  - id: NG-02
+    statement: "não presta consultoria direta ao contribuinte final (B2B only)"

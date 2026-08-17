@@ -1,0 +1,16 @@
+# L1 — journey.yaml (schema: schemas/journey.schema.json)
+actors:
+  - { id: ACT-X, name: "", persona_ref: CUST-X }
+journeys:
+  - id: JRN-NUCLEO
+    actor: ACT-X
+    trigger: ""                 # gatilho CONCRETO, não "usuário tem necessidade"
+    shape: linear               # linear | loop (uso recorrente = loop)
+    moments:
+      - id: MOM-01
+        name: ""
+        intent: ""              # o que o ator quer NAQUELE instante
+        emotion_target: ""      # alívio, controle, confiança...
+        channel: [web]
+        truth_moment: false     # 1-3 por jornada; se tudo é verdade, nada é
+        vision_refs: [PROB-01]  # que problema/tenet este momento ataca

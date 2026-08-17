@@ -1,0 +1,71 @@
+# Aurora Tax — L2 blueprint.yaml
+blueprints:
+  - moment_ref: MOM-01
+    frontstage:
+      - "editor de consulta com sugestão de enquadramento (tipo de operação, tributo, período)"
+    backstage:
+      - { id: BCK-01, action: "classificação preliminar da consulta por tema/dispositivo", sla_ms: 2000 }
+    policies:
+      - id: POL-ESC-01
+        rule: "consulta fora do escopo tributário é recusada na entrada, com redirecionamento"
+        source: TEN-02
+        on_violation: "consulta não entra na fila; usuário recebe recusa com motivo"
+    edge_cases:
+      - id: EDG-06
+        case: "pergunta fora do escopo tributário (ex: pedido de peça processual)"
+        resolution: "recusar com redirecionamento, citando NG-01; oferecer reformulação"
+        severity: media
+
+  - moment_ref: MOM-03
+    frontstage:
+      - "resposta exibida com citações clicáveis por dispositivo normativo"
+      - "selo de verificação por citação (verificada / com ressalva)"
+    backstage:
+      - { id: BCK-11, action: "RAG sobre base LC 214/2025 + atos infralegais", sla_ms: 8000 }
+      - { id: BCK-12, action: "validação de cada citação contra fonte primária" }
+    policies:
+      - id: POL-CIT-01
+        rule: "toda afirmação normativa DEVE citar dispositivo verificado contra fonte primária"
+        source: TEN-01
+        on_violation: "resposta é bloqueada e reformulada antes de exibir"
+      - id: POL-CONF-01
+        rule: "conflito entre normas exibe ambas + critério de resolução (hierarquia/cronologia/especialidade)"
+        source: FAQ-07
+        on_violation: "resposta não pode omitir a norma conflitante"
+    edge_cases:
+      - id: EDG-05
+        case: "base normativa desatualizada (norma publicada há <24h) — FAQ-11"
+        resolution: "responder com ressalva de vigência explícita + agendar reindexação prioritária"
+        severity: alta
+      - id: EDG-07
+        case: "RAG excede SLA de 8s"
+        resolution: "modo degradado: resposta parcial com aviso + notificação quando completa"
+        severity: media
+      - id: EDG-08
+        case: "nenhum dispositivo encontrado para fundamentar"
+        resolution: "declarar impossibilidade de fundamentar e escalar para revisão humana"
+        severity: alta
+
+  - moment_ref: MOM-10
+    frontstage:
+      - "radar diário: lista de normas novas/alteradas com impacto estimado por cliente"
+    backstage:
+      - { id: BCK-21, action: "ingestão diária de fontes oficiais (DOU, comitê gestor)", sla_ms: 0 }
+      - { id: BCK-22, action: "matching norma → clientes potencialmente impactados" }
+    policies:
+      - id: POL-RAD-01
+        rule: "norma sem classificação de impacto em 24h aparece como 'pendente de análise', nunca some"
+        source: PROB-01
+        on_violation: "norma é exibida com flag de pendência"
+    edge_cases:
+      - id: EDG-21
+        case: "fonte oficial fora do ar durante a janela de ingestão"
+        resolution: "retry com backoff + banner de cobertura parcial no radar do dia"
+        severity: media
+      - id: EDG-22
+        case: "volume atípico (>200 normas num dia, ex: pacote de regulamentação)"
+        accepted_risk:
+          owner: "PM"
+          date: "2026-08-01"
+          reason: "raro; tratar na v2 com priorização por relevância — risco aceito no MVP"
+        severity: baixa

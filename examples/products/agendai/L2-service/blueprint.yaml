@@ -1,0 +1,60 @@
+blueprints:
+  - moment_ref: MOM-01
+    frontstage:
+      - "vitrine de horários do dia/semana, atualizada em tempo real"
+    backstage:
+      - { id: BCK-01, action: "cálculo de slots livres (agenda − bloqueios − buffer de serviço)", sla_ms: 500 }
+    policies:
+      - id: POL-REAL-01
+        rule: "só exibir slot que pode ser honrado (serviço cabe antes do próximo compromisso)"
+        source: TEN-01
+        on_violation: "slot é removido da vitrine imediatamente"
+    edge_cases:
+      - id: EDG-01
+        case: "dois clientes tentam o mesmo slot simultaneamente"
+        resolution: "lock otimista: primeiro confirma, segundo recebe alternativas próximas na mesma tela"
+        severity: alta
+
+  - moment_ref: MOM-02
+    frontstage:
+      - "confirmação imediata com resumo (serviço, barbeiro, horário) e botão de adicionar ao calendário"
+    backstage:
+      - { id: BCK-02, action: "criação da reserva + disparo de confirmação", sla_ms: 1000 }
+    policies:
+      - id: POL-NOSHOW-01
+        rule: "cliente com 2 no-shows em 60 dias só agenda com confirmação antecipada (responder lembrete até 3h antes) — FAQ-01"
+        source: FAQ-01
+        on_violation: "reserva fica 'pendente de confirmação' e slot volta pra vitrine se não confirmada"
+    edge_cases:
+      - id: EDG-02
+        case: "cliente cancela a menos de 2h do horário"
+        resolution: "slot volta pra vitrine + notificação pra lista de espera do dia — FAQ-03"
+        severity: media
+      - id: EDG-03
+        case: "lista de espera: 5 pessoas notificadas do mesmo slot vago"
+        resolution: "notificação em ondas de 1 (30s de prioridade por ordem de entrada na lista) — evita corrida — FAQ-03"
+        severity: media
+
+  - moment_ref: MOM-11
+    frontstage:
+      - "linha do tempo do dia com estado de cada atendimento; ações de um toque (atrasar 15min, encaixar, liberar)"
+    backstage:
+      - { id: BCK-11, action: "replanejamento em cascata da agenda ao registrar atraso", sla_ms: 800 }
+      - { id: BCK-12, action: "notificação automática aos clientes impactados pelo atraso" }
+    policies:
+      - id: POL-ATRASO-01
+        rule: "atraso registrado propaga aos próximos clientes com nova previsão — FAQ-02; nunca cancelar automaticamente sem ação do dono"
+        source: FAQ-02
+        on_violation: "cascata é sugerida, nunca aplicada sem confirmação de um toque"
+    edge_cases:
+      - id: EDG-11
+        case: "atraso estoura o expediente (último cliente ficaria sem atendimento)"
+        resolution: "sugerir ao dono: reagendar com prioridade + cupom de desculpas; decisão é do dono (TEN-02: um toque)"
+        severity: alta
+      - id: EDG-12
+        case: "dono fica offline (sem internet na barbearia)"
+        accepted_risk:
+          owner: "PM"
+          date: "2026-08-10"
+          reason: "MVP assume conectividade; modo offline-first avaliado na v2"
+        severity: media

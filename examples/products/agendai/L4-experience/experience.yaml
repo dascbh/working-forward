@@ -1,0 +1,94 @@
+flows:
+  - id: FLW-MARCAR
+    serves: [MOM-01, MOM-02]
+    initial: vitrine
+    states:
+      vitrine:
+        screen: SCR-VITRINE
+        must_render: [slots_reais_tempo_real]   # POL-REAL-01
+        on:
+          ESCOLHER_SLOT: { target: confirmando, guard: VAL-SLOT-01 }
+      confirmando:
+        screen: SCR-CONFIRMA
+        invoke: CMD-CriarReserva
+        on:
+          EVT-ReservaCriada:   { target: confirmada }
+          EVT-ReservaPendente: { target: pendente }
+          SLOT_PERDIDO:        { target: alternativas, covers: [EDG-01] }
+      alternativas:
+        screen: SCR-ALTERNATIVAS
+        covers: [EDG-01]
+        must_render: [slots_proximos_mesma_tela]
+        on:
+          ESCOLHER_SLOT: { target: confirmando, guard: VAL-SLOT-01 }
+      pendente:
+        screen: SCR-PENDENTE
+        must_render: [explicacao_confirmacao_antecipada, prazo_3h]   # POL-NOSHOW-01
+        on:
+          CONFIRMAR_PRESENCA: { target: confirmada }
+          PRAZO_EXPIRADO:     { target: vitrine, covers: [EDG-02] }
+      confirmada:
+        screen: SCR-CONFIRMADA
+        must_render: [resumo, add_calendario]
+
+  - id: FLW-VAGA
+    serves: [MOM-03]
+    initial: aguardando
+    states:
+      aguardando:
+        screen: SCR-ESPERA
+        on:
+          EVT-SlotLiberado: { target: oferta, covers: [EDG-02, EDG-03] }
+      oferta:
+        screen: SCR-OFERTA
+        covers: [EDG-03]
+        must_render: [janela_prioridade_30s]    # ondas de 1 — sem corrida
+        on:
+          ACEITAR: { target: confirmando_vaga, guard: VAL-SLOT-01 }
+          EXPIRAR: { target: aguardando }
+      confirmando_vaga:
+        screen: SCR-CONFIRMA
+        invoke: CMD-CriarReserva
+        on:
+          EVT-ReservaCriada: { target: confirmada_vaga }
+      confirmada_vaga:
+        screen: SCR-CONFIRMADA
+
+  - id: FLW-DIA
+    serves: [MOM-10, MOM-11]
+    initial: linha_do_tempo
+    states:
+      linha_do_tempo:
+        screen: SCR-DIA
+        must_render: [timeline_estados, acoes_um_toque]   # TEN-02
+        on:
+          EVT-AtrasoRegistrado: { target: cascata_proposta }
+      cascata_proposta:
+        screen: SCR-CASCATA
+        must_render: [nova_previsao_por_cliente, confirmar_um_toque]   # POL-ATRASO-01
+        on:
+          EVT-CascataProposta: { target: cascata_proposta }
+          CONFIRMAR:  { target: linha_do_tempo }
+          ESTOURO:    { target: estouro, covers: [EDG-11] }
+      estouro:
+        screen: SCR-ESTOURO
+        covers: [EDG-11]
+        must_render: [sugestao_reagendar_prioridade, cupom_desculpas, decisao_do_dono]
+
+validations:
+  - id: VAL-SLOT-01
+    field: reserva.slot
+    rule: "slot ainda livre e serviço cabe antes do próximo compromisso"
+    derived_from: POL-REAL-01
+
+screens:
+  - { id: SCR-VITRINE,      components: [grade-slots, filtro-servico], tokens_scope: "marcacao.*" }
+  - { id: SCR-CONFIRMA,     components: [resumo-reserva, cta-confirmar], tokens_scope: "marcacao.*" }
+  - { id: SCR-ALTERNATIVAS, components: [slots-proximos], tokens_scope: "marcacao.*" }
+  - { id: SCR-PENDENTE,     components: [aviso-pendente, cta-confirmar-presenca], tokens_scope: "marcacao.*" }
+  - { id: SCR-CONFIRMADA,   components: [confirmacao-card, add-calendario], tokens_scope: "marcacao.*" }
+  - { id: SCR-ESPERA,       components: [status-espera], tokens_scope: "marcacao.*" }
+  - { id: SCR-OFERTA,       components: [oferta-card, timer-30s], tokens_scope: "marcacao.*" }
+  - { id: SCR-DIA,          components: [timeline, acao-rapida], tokens_scope: "operacao.*" }
+  - { id: SCR-CASCATA,      components: [cascata-preview, cta-um-toque], tokens_scope: "operacao.*" }
+  - { id: SCR-ESTOURO,      components: [estouro-card, sugestoes], tokens_scope: "operacao.*" }

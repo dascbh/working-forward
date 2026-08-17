@@ -1,0 +1,57 @@
+# Aurora Tax — L1 journey.yaml
+actors:
+  - { id: ACT-ADV, name: "Advogado", persona_ref: CUST-ADV }
+  - { id: ACT-EST, name: "Estagiário", persona_ref: CUST-EST }
+
+journeys:
+  - id: JRN-CONSULTA
+    actor: ACT-ADV
+    trigger: "cliente pergunta sobre incidência de IBS/CBS em operação específica"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Formular a dúvida"
+        intent: "traduzir a pergunta do cliente em consulta técnica precisa"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: false
+        vision_refs: [PROB-02]
+      - id: MOM-02
+        name: "Aguardar com visibilidade"
+        intent: "saber que a consulta está sendo processada e quanto falta"
+        emotion_target: tranquilidade
+        channel: [web]
+        truth_moment: false
+      - id: MOM-03
+        name: "Receber resposta fundamentada"
+        intent: "obter resposta com base normativa citada e verificável"
+        emotion_target: alívio
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-01, PROB-02, TEN-01]
+      - id: MOM-04
+        name: "Auditar a fundamentação"
+        intent: "clicar em cada citação e confirmar a fonte antes de repassar ao cliente"
+        emotion_target: segurança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-01]
+
+  - id: JRN-MONITOR
+    actor: ACT-EST
+    trigger: "início do dia de trabalho — checar o que mudou no cenário normativo"
+    shape: loop
+    moments:
+      - id: MOM-10
+        name: "Revisar o radar do dia"
+        intent: "ver as normas novas/alteradas relevantes pros clientes do escritório"
+        emotion_target: controle
+        channel: [web, email]
+        truth_moment: true
+        vision_refs: [PROB-01]
+      - id: MOM-11
+        name: "Encaminhar impacto ao responsável"
+        intent: "marcar a norma como relevante e notificar o advogado da conta"
+        emotion_target: eficiência
+        channel: [web]
+        truth_moment: false

@@ -1,0 +1,41 @@
+product: agendai
+customer:
+  primary:
+    id: CUST-DONO
+    who: "dono de barbearia de bairro (1–4 cadeiras)"
+    context: "gerencia agenda no papel/WhatsApp, perde horários vagos"
+  secondary:
+    - id: CUST-CLI
+      who: "cliente recorrente da barbearia"
+      context: "quer marcar sem ligação e sem espera de resposta"
+
+problem:
+  - id: PROB-01
+    statement: "20–30% da agenda perdida entre no-shows e vagas não divulgadas"
+    severity: alta
+    evidence: "piloto com 3 barbearias, 4 semanas de medição"
+  - id: PROB-02
+    statement: "marcar pelo WhatsApp exige espera de resposta; cliente desiste"
+    severity: media
+    evidence: "entrevistas com 12 clientes"
+
+solution_one_liner: "Agenda real em tempo real: cliente marca em 20 segundos, cancelamento vira vaga na vitrine automaticamente."
+
+tenets:
+  - id: TEN-01
+    rule: "a agenda que o cliente vê É a agenda real — nunca exibir horário que não pode ser honrado"
+  - id: TEN-02
+    rule: "o dono nunca é obrigado a usar tela durante o expediente — o produto trabalha sozinho"
+
+north_star:
+  metric: "taxa de ocupação da agenda das barbearias ativas"
+  target: "+15 p.p. em 6 meses"
+
+hard_questions:
+  - { id: FAQ-01, q: "o que acontece quando o cliente não aparece (no-show)?", owner_layer: L2 }
+  - { id: FAQ-02, q: "e se o barbeiro atrasar e a agenda em cascata estourar?", owner_layer: L2 }
+  - { id: FAQ-03, q: "como o horário cancelado volta pra vitrine sem virar corrida maluca?", owner_layer: L2 }
+
+non_goals:
+  - { id: NG-01, statement: "não é marketplace de descoberta de barbearias — atende a base existente de cada barbearia" }
+  - { id: NG-02, statement: "não processa pagamento no MVP" }

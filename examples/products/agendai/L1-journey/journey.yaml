@@ -1,0 +1,51 @@
+actors:
+  - { id: ACT-CLI,  name: "Cliente",  persona_ref: CUST-CLI }
+  - { id: ACT-DONO, name: "Dono",     persona_ref: CUST-DONO }
+
+journeys:
+  - id: JRN-MARCAR
+    actor: ACT-CLI
+    trigger: "cabelo crescendo; recebe link da barbearia ou abre o app"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Ver horários reais"
+        intent: "saber agora quais horários existem de verdade"
+        emotion_target: alívio
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [PROB-02, TEN-01]
+      - id: MOM-02
+        name: "Confirmar em segundos"
+        intent: "escolher horário e serviço e receber confirmação imediata"
+        emotion_target: satisfação
+        channel: [web, app]
+        truth_moment: true
+        vision_refs: [PROB-02]
+      - id: MOM-03
+        name: "Ser lembrado na hora certa"
+        intent: "receber lembrete que evita esquecimento sem ser spam"
+        emotion_target: cuidado
+        channel: [push, whatsapp]
+        truth_moment: false
+        vision_refs: [PROB-01]
+
+  - id: JRN-DIA-DO-DONO
+    actor: ACT-DONO
+    trigger: "expediente começa; a agenda do dia governa o trabalho"
+    shape: loop
+    moments:
+      - id: MOM-10
+        name: "Abrir o dia com a agenda pronta"
+        intent: "ver o dia inteiro, quem vem, e o que mudou desde ontem"
+        emotion_target: controle
+        channel: [app]
+        truth_moment: true
+        vision_refs: [TEN-02]
+      - id: MOM-11
+        name: "Absorver imprevistos sem parar de trabalhar"
+        intent: "atraso/cancelamento se resolvem sozinhos ou com um toque"
+        emotion_target: tranquilidade
+        channel: [app, push]
+        truth_moment: true
+        vision_refs: [TEN-02, PROB-01]

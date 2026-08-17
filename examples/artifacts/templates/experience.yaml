@@ -1,0 +1,32 @@
+# L4 — experience.yaml (schema: schemas/experience.schema.json)
+flows:
+  - id: FLW-NUCLEO
+    serves: [MOM-01]
+    initial: inicio
+    states:
+      inicio:
+        screen: SCR-INICIO
+        must_render: []         # contrato mínimo da tela (do frontstage do L2)
+        on:
+          ACAO: { target: processando, guard: VAL-X-01 }
+      processando:
+        screen: SCR-AGUARDE
+        invoke: CMD-FazerCoisa  # amarra ao domínio
+        on:
+          EVT-CoisaAconteceu: { target: fim }
+          FALHA: { target: erro, covers: [EDG-01] }   # caminho triste tem estado!
+      erro:
+        screen: SCR-ERRO
+        covers: [EDG-01]
+      fim:
+        screen: SCR-FIM
+validations:
+  - id: VAL-X-01
+    field: ""
+    rule: ""
+    derived_from: POL-X-01      # sem pedigree = decisão clandestina (lint bloqueia)
+screens:
+  - { id: SCR-INICIO, components: [], tokens_scope: "nucleo.*" }
+  - { id: SCR-AGUARDE, components: [], tokens_scope: "nucleo.*" }
+  - { id: SCR-ERRO, components: [], tokens_scope: "nucleo.*" }
+  - { id: SCR-FIM, components: [], tokens_scope: "nucleo.*" }

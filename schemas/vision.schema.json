@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://working-forward.dev/schemas/vision.schema.json",
+  "title": "Working Forward L0 — vision.yaml",
+  "type": "object",
+  "required": ["product", "customer", "problem", "solution_one_liner", "tenets", "hard_questions"],
+  "properties": {
+    "product": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "customer": {
+      "type": "object",
+      "required": ["primary"],
+      "properties": {
+        "primary": { "$ref": "#/$defs/persona" },
+        "secondary": { "type": "array", "items": { "$ref": "#/$defs/persona" } }
+      }
+    },
+    "problem": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "severity"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id_prob" },
+          "statement": { "type": "string" },
+          "severity": { "enum": ["alta", "media", "baixa"] },
+          "evidence": { "type": "string", "description": "de onde sabemos que isso dói — entrevista, dado, observação" }
+        }
+      }
+    },
+    "solution_one_liner": { "type": "string", "maxLength": 280 },
+    "tenets": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["id", "rule"],
+        "properties": { "id": { "$ref": "#/$defs/id_ten" }, "rule": { "type": "string" } }
+      }
+    },
+    "north_star": {
+      "type": "object", "required": ["metric"],
+      "properties": { "metric": { "type": "string" }, "target": { "type": "string" } }
+    },
+    "hard_questions": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "q", "owner_layer"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id_faq" },
+          "q": { "type": "string" },
+          "owner_layer": { "enum": ["L0", "L1", "L2", "L3", "L4", "L5", "L6"] }
+        }
+      }
+    },
+    "non_goals": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "statement"],
+        "properties": { "id": { "$ref": "#/$defs/id_ng" }, "statement": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "persona": {
+      "type": "object", "required": ["id", "who"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^CUST-[A-Z0-9-]+$" },
+        "who": { "type": "string" },
+        "context": { "type": "string" }
+      }
+    },
+    "id_prob": { "type": "string", "pattern": "^PROB-[A-Z0-9-]+$" },
+    "id_ten":  { "type": "string", "pattern": "^TEN-[A-Z0-9-]+$" },
+    "id_faq":  { "type": "string", "pattern": "^FAQ-[A-Z0-9-]+$" },
+    "id_ng":   { "type": "string", "pattern": "^NG-[A-Z0-9-]+$" }
+  }
+}

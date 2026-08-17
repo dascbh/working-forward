@@ -1,0 +1,35 @@
+events:
+  - { id: EVT-ReservaCriada,       aggregate: AGG-Reserva, emitted_by: CMD-CriarReserva }
+  - { id: EVT-ReservaPendente,     aggregate: AGG-Reserva, emitted_by: CMD-CriarReserva }
+  - { id: EVT-ReservaCancelada,    aggregate: AGG-Reserva, emitted_by: CMD-CancelarReserva }
+  - { id: EVT-SlotLiberado,        aggregate: AGG-Agenda,  emitted_by: BCK-01 }
+  - { id: EVT-AtrasoRegistrado,    aggregate: AGG-Agenda,  emitted_by: CMD-RegistrarAtraso }
+  - { id: EVT-CascataProposta,     aggregate: AGG-Agenda,  emitted_by: BCK-11 }
+
+commands:
+  - { id: CMD-CriarReserva,      actor: ACT-CLI,  produces: [EVT-ReservaCriada, EVT-ReservaPendente] }
+  - { id: CMD-CancelarReserva,   actor: ACT-CLI,  produces: [EVT-ReservaCancelada] }
+  - { id: CMD-LiberarSlot,       actor: system,   produces: [EVT-SlotLiberado] }
+  - { id: CMD-NotificarEspera,   actor: system,   produces: [] }
+  - { id: CMD-RegistrarAtraso,   actor: ACT-DONO, produces: [EVT-AtrasoRegistrado] }
+  - { id: CMD-ProporCascata,     actor: system,   produces: [EVT-CascataProposta] }
+
+reactions:
+  - { id: RCT-01, when: EVT-ReservaCancelada, then: CMD-LiberarSlot,     implements: POL-REAL-01 }
+  - { id: RCT-02, when: EVT-SlotLiberado,     then: CMD-NotificarEspera, implements: POL-NOSHOW-01 }
+  - { id: RCT-03, when: EVT-AtrasoRegistrado, then: CMD-ProporCascata,   implements: POL-ATRASO-01 }
+
+aggregates:
+  - id: AGG-Reserva
+    invariants: [POL-NOSHOW-01]
+  - id: AGG-Agenda
+    invariants: [POL-REAL-01, POL-ATRASO-01]
+
+contexts:
+  - id: CTX-Marcacao
+    aggregates: [AGG-Reserva]
+    moments_served: [MOM-01, MOM-02, MOM-03]
+  - id: CTX-Operacao
+    aggregates: [AGG-Agenda]
+    moments_served: [MOM-10, MOM-11]
+    relationship: { with: CTX-Marcacao, type: shared-kernel }

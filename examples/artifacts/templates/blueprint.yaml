@@ -1,0 +1,17 @@
+# L2 — blueprint.yaml (schema: schemas/blueprint.schema.json)
+blueprints:
+  - moment_ref: MOM-01
+    frontstage:
+      - ""                      # o que o usuário vê (sem desenhar tela)
+    backstage:
+      - { id: BCK-01, action: "", sla_ms: 1000 }   # human: true p/ processo humano
+    policies:
+      - id: POL-X-01
+        rule: ""
+        source: TEN-01          # TEN/FAQ/PROB do L0 — regra tem pedigree
+        on_violation: ""        # regra sem consequência não é regra
+    edge_cases:
+      - id: EDG-01
+        case: ""                # concorrência? timing? dados? terceiros? humanos? escala?
+        resolution: ""          # OU accepted_risk: {owner, date, reason}
+        severity: alta
