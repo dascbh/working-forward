@@ -6,7 +6,7 @@ flows:
     states:
       compondo:
         screen: SCR-EDITOR
-        on:
+        "on":
           SUBMETER:
             target: processando
             guard: VAL-INPUT-01
@@ -18,13 +18,13 @@ flows:
         covers: [EDG-06]
         answers: [FAQ-13, NG-01]   # recusa elegante É a resposta à hard question
         must_render: [motivo_recusa, link_reformular]   # FAQ-13: recusa elegante, NG-01 explícito
-        on:
+        "on":
           REFORMULAR: { target: compondo }
       processando:
         screen: SCR-AGUARDE
         invoke: CMD-SubmeterConsulta
         must_render: [indicador_progresso]
-        on:
+        "on":
           EVT-ConsultaRespondida: { target: respondida }
           EVT-CitacaoInvalidada:  { target: reformulando }
           EVT-RespostaDegradada:  { target: degradada, covers: [EDG-07] }
@@ -32,13 +32,13 @@ flows:
       reformulando:
         screen: SCR-AGUARDE
         must_render: [aviso_reverificacao]
-        on:
+        "on":
           EVT-ConsultaRespondida: { target: respondida }
       degradada:
         screen: SCR-RESPOSTA-PARCIAL
         covers: [EDG-07]
         must_render: [aviso_parcial, notificar_quando_completa]
-        on:
+        "on":
           EVT-ConsultaRespondida: { target: respondida }
       escalada:
         screen: SCR-ESCALADA
@@ -48,7 +48,7 @@ flows:
         screen: SCR-RESPOSTA
         covers: [EDG-05]           # ressalva de vigência renderizada quando norma <24h
         must_render: [citacoes_clicaveis, selo_verificacao, ressalva_vigencia_quando_aplicavel]
-        on:
+        "on":
           AUDITAR_CITACAO: { target: auditando }
       auditando:
         screen: SCR-FONTE
@@ -62,18 +62,18 @@ flows:
         screen: SCR-RADAR
         must_render: [normas_do_dia, impacto_por_cliente, pendentes_de_analise]
         # pendentes_de_analise implementa POL-RAD-01
-        on:
+        "on":
           COBERTURA_PARCIAL: { target: radar_parcial, covers: [EDG-21] }
           ABRIR_NORMA:       { target: detalhe_norma }
       radar_parcial:
         screen: SCR-RADAR
         covers: [EDG-21]
         must_render: [banner_cobertura_parcial]
-        on:
+        "on":
           ABRIR_NORMA: { target: detalhe_norma }
       detalhe_norma:
         screen: SCR-NORMA
-        on:
+        "on":
           ENCAMINHAR: { target: encaminhada, guard: VAL-RESP-01 }
       encaminhada:
         screen: SCR-CONFIRMACAO

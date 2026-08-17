@@ -6,12 +6,12 @@ flows:
       vitrine:
         screen: SCR-VITRINE
         must_render: [slots_reais_tempo_real]   # POL-REAL-01
-        on:
+        "on":
           ESCOLHER_SLOT: { target: confirmando, guard: VAL-SLOT-01 }
       confirmando:
         screen: SCR-CONFIRMA
         invoke: CMD-CriarReserva
-        on:
+        "on":
           EVT-ReservaCriada:   { target: confirmada }
           EVT-ReservaPendente: { target: pendente }
           SLOT_PERDIDO:        { target: alternativas, covers: [EDG-01] }
@@ -19,12 +19,12 @@ flows:
         screen: SCR-ALTERNATIVAS
         covers: [EDG-01]
         must_render: [slots_proximos_mesma_tela]
-        on:
+        "on":
           ESCOLHER_SLOT: { target: confirmando, guard: VAL-SLOT-01 }
       pendente:
         screen: SCR-PENDENTE
         must_render: [explicacao_confirmacao_antecipada, prazo_3h]   # POL-NOSHOW-01
-        on:
+        "on":
           CONFIRMAR_PRESENCA: { target: confirmada }
           PRAZO_EXPIRADO:     { target: vitrine, covers: [EDG-02] }
       confirmada:
@@ -37,19 +37,19 @@ flows:
     states:
       aguardando:
         screen: SCR-ESPERA
-        on:
+        "on":
           EVT-SlotLiberado: { target: oferta, covers: [EDG-02, EDG-03] }
       oferta:
         screen: SCR-OFERTA
         covers: [EDG-03]
         must_render: [janela_prioridade_30s]    # ondas de 1 — sem corrida
-        on:
+        "on":
           ACEITAR: { target: confirmando_vaga, guard: VAL-SLOT-01 }
           EXPIRAR: { target: aguardando }
       confirmando_vaga:
         screen: SCR-CONFIRMA
         invoke: CMD-CriarReserva
-        on:
+        "on":
           EVT-ReservaCriada: { target: confirmada_vaga }
       confirmada_vaga:
         screen: SCR-CONFIRMADA
@@ -61,12 +61,12 @@ flows:
       linha_do_tempo:
         screen: SCR-DIA
         must_render: [timeline_estados, acoes_um_toque]   # TEN-02
-        on:
+        "on":
           EVT-AtrasoRegistrado: { target: cascata_proposta }
       cascata_proposta:
         screen: SCR-CASCATA
         must_render: [nova_previsao_por_cliente, confirmar_um_toque]   # POL-ATRASO-01
-        on:
+        "on":
           EVT-CascataProposta: { target: cascata_proposta }
           CONFIRMAR:  { target: linha_do_tempo }
           ESTOURO:    { target: estouro, covers: [EDG-11] }

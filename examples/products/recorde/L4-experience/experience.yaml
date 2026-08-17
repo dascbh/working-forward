@@ -6,29 +6,29 @@ flows:
     states:
       escolhendo:
         screen: SCR-PLANOS
-        on:
+        "on":
           SELECIONAR: { target: calculando_proracao }
       calculando_proracao:
         screen: SCR-CONFIRMACAO-TROCA
         invoke: CMD-CalcularProracao
-        on:
+        "on":
           EVT-ProracaoCalculada: { target: confirmando }
       confirmando:
         screen: SCR-CONFIRMACAO-TROCA
         must_render: [proracao_detalhada, proxima_renovacao]
-        on:
+        "on":
           CONFIRMAR: { target: trocando, guard: VAL-TROCA-01 }
       trocando:
         screen: SCR-CONFIRMACAO-TROCA
         invoke: CMD-TrocarPlano
-        on:
+        "on":
           EVT-PlanoTrocado: { target: trocado }
           TROCA_REPETIDA_NO_CICLO: { target: trocado, covers: [EDG-01] }
       trocado:
         screen: SCR-CONFIRMACAO-TROCA
         covers: [EDG-02]
         must_render: [resumo_troca]
-        on:
+        "on":
           EVT-FaturaEmitida: { target: fatura_disponivel }
       fatura_disponivel:
         screen: SCR-FATURA
@@ -41,24 +41,24 @@ flows:
     states:
       ativa:
         screen: SCR-CONTA
-        on:
+        "on":
           PAUSAR: { target: pausando, guard: VAL-PAUSA-01 }
       pausando:
         screen: SCR-CONTA
         invoke: CMD-PausarAssinatura
-        on:
+        "on":
           EVT-AssinaturaPausada: { target: pausada, covers: [EDG-04] }
       pausada:
         screen: SCR-CONTA
         covers: [EDG-04, EDG-05]
         answers: [FAQ-03]
         must_render: [configuracoes_preservadas, prazo_maximo_pausa]
-        on:
+        "on":
           RETOMAR: { target: retomando }
       retomando:
         screen: SCR-CONTA
         invoke: CMD-RetomarAssinatura
-        on:
+        "on":
           EVT-AssinaturaRetomada: { target: ativa }
 
   - id: FLW-COBRAR
@@ -68,19 +68,19 @@ flows:
       aguardando_renovacao:
         screen: SCR-COBRANCA
         invoke: CMD-CobrarRenovacao
-        on:
+        "on":
           EVT-CobrancaTentada: { target: cobrando }
       cobrando:
         screen: SCR-COBRANCA
         must_render: [status_cobranca_em_andamento]
-        on:
+        "on":
           EVT-CobrancaFalhou: { target: retentando, covers: [EDG-06] }
           SUCESSO: { target: aguardando_renovacao }
       retentando:
         screen: SCR-RETENTATIVA
         covers: [EDG-07]
         must_render: [tentativa_atual, proxima_data, dias_ate_suspensao]
-        on:
+        "on":
           EVT-CobrancaRecuperada: { target: aguardando_renovacao }
           CARTAO_ATUALIZADO:      { target: retentando, covers: [EDG-07] }
           TENTATIVAS_ESGOTADAS:   { target: suspendendo, covers: [EDG-08] }
@@ -88,7 +88,7 @@ flows:
         screen: SCR-RETENTATIVA
         invoke: CMD-SuspenderAcesso
         covers: [EDG-08]
-        on:
+        "on":
           EVT-AcessoSuspenso: { target: suspensa }
       suspensa:
         screen: SCR-CONTA

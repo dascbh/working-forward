@@ -6,19 +6,19 @@ flows:
     states:
       solicitando:
         screen: SCR-WIDGET-CHECKOUT
-        on:
+        "on":
           ENVIAR: { target: verificando_concorrencia, guard: VAL-SOLICITACAO-01 }
       verificando_concorrencia:
         screen: SCR-WIDGET-CHECKOUT
         invoke: CMD-SolicitarCredito
-        on:
+        "on":
           EVT-SolicitacaoCriada:      { target: decidindo }
           EVT-SolicitacaoConcorrente: { target: decidindo, covers: [EDG-01] }
       decidindo:
         screen: SCR-WIDGET-CHECKOUT
         invoke: CMD-DecidirCredito
         must_render: [indicador_analise_em_tempo_real]
-        on:
+        "on":
           EVT-DecisaoAprovada: { target: aprovado }
           EVT-DecisaoNegada:   { target: gerando_motivo }
           EVT-DecisaoPendente: { target: em_analise, covers: [EDG-03] }
@@ -26,13 +26,13 @@ flows:
         screen: SCR-WIDGET-CHECKOUT
         covers: [EDG-03]
         must_render: [prazo_estimado, opcao_outro_metodo]
-        on:
+        "on":
           EVT-DecisaoAprovada: { target: aprovado }
           EVT-DecisaoNegada:   { target: gerando_motivo }
       aprovado:
         screen: SCR-CONDICOES
         must_render: [valor_parcelas_juros]
-        on:
+        "on":
           ACEITAR: { target: finalizado, guard: VAL-CONDICOES-01 }
       finalizado:
         screen: SCR-CONDICOES
@@ -40,7 +40,7 @@ flows:
       gerando_motivo:
         screen: SCR-NEGATIVA
         invoke: CMD-GerarMotivo
-        on:
+        "on":
           EVT-MotivoGerado: { target: negado }
       negado:
         screen: SCR-NEGATIVA
@@ -55,7 +55,7 @@ flows:
         screen: SCR-PAINEL-PARCEIRO
         answers: [FAQ-03]
         must_render: [status_por_venda]
-        on:
+        "on":
           EVT-StatusNotificado:   { target: acompanhando }
           WEBHOOK_FALHOU:         { target: reentregando, covers: [EDG-05] }
           ABRIR_RECONCILIACAO:    { target: reconciliando }
@@ -64,12 +64,12 @@ flows:
         invoke: CMD-ReentregarWebhook
         covers: [EDG-05]
         must_render: [status_sempre_consultavel_no_painel]
-        on:
+        "on":
           EVT-StatusNotificado: { target: acompanhando }
       reconciliando:
         screen: SCR-EXTRATO-REPASSE
         invoke: CMD-ExecutarRepasse
-        on:
+        "on":
           EVT-RepasseExecutado: { target: repassado, covers: [EDG-06] }
       repassado:
         screen: SCR-EXTRATO-REPASSE

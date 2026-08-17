@@ -6,21 +6,21 @@ flows:
     states:
       navegando:
         screen: SCR-VITRINE
-        on:
+        "on":
           ADICIONAR: { target: adicionando }
       adicionando:
         screen: SCR-VITRINE
         invoke: CMD-AdicionarItem
-        on:
+        "on":
           EVT-ItemAdicionado: { target: no_carrinho }
       no_carrinho:
         screen: SCR-CARRINHO
-        on:
+        "on":
           IR_PARA_CHECKOUT: { target: reservando }
       reservando:
         screen: SCR-CHECKOUT
         invoke: CMD-IniciarCheckout
-        on:
+        "on":
           EVT-EstoqueReservado:  { target: preenchendo }
           RESERVA_INDISPONIVEL: { target: item_indisponivel, covers: [EDG-01] }
       item_indisponivel:
@@ -30,13 +30,13 @@ flows:
       preenchendo:
         screen: SCR-CHECKOUT
         must_render: [contagem_regressiva_reserva]
-        on:
+        "on":
           PAGAR: { target: processando_pagamento, guard: VAL-CHECKOUT-01 }
           RESERVA_QUASE_EXPIRA: { target: preenchendo, covers: [EDG-03] }
       processando_pagamento:
         screen: SCR-CHECKOUT
         invoke: CMD-ProcessarPagamento
-        on:
+        "on":
           EVT-PagamentoAprovado: { target: confirmando }
           EVT-PagamentoFalhou:   { target: pagamento_falhou, covers: [EDG-02] }
           PAGAMENTO_ASSINCRONO:  { target: aguardando_pagamento, covers: [EDG-04] }
@@ -44,18 +44,18 @@ flows:
         screen: SCR-CHECKOUT
         covers: [EDG-02]
         must_render: [dados_preenchidos_preservados, outro_metodo_pagamento]
-        on:
+        "on":
           PAGAR: { target: processando_pagamento, guard: VAL-CHECKOUT-01 }
       aguardando_pagamento:
         screen: SCR-CHECKOUT
         covers: [EDG-04]
         must_render: [instrucoes_pix_boleto, estoque_reservado_ate]
-        on:
+        "on":
           EVT-PagamentoAprovado: { target: confirmando }
       confirmando:
         screen: SCR-CONFIRMACAO
         invoke: CMD-ConfirmarPedido
-        on:
+        "on":
           EVT-PedidoConfirmado: { target: confirmado }
       confirmado:
         screen: SCR-CONFIRMACAO
@@ -67,7 +67,7 @@ flows:
     states:
       monitorando:
         screen: SCR-LEMBRETE
-        on:
+        "on":
           EVT-CarrinhoAbandonado: { target: lembrando }
       lembrando:
         screen: SCR-LEMBRETE
@@ -75,7 +75,7 @@ flows:
         covers: [EDG-05]
         answers: [FAQ-03]
         must_render: [itens_do_carrinho, alternativa_se_indisponivel]
-        on:
+        "on":
           RETOMAR: { target: retomando }
       retomando:
         screen: SCR-CHECKOUT
@@ -89,13 +89,13 @@ flows:
       acompanhando:
         screen: SCR-PAINEL-LOJISTA
         must_render: [pedidos_em_tempo_real, alertas_ruptura]
-        on:
+        "on":
           EVT-EstoqueLiberado:     { target: acompanhando }
           ABRIR_PEDIDO_PENDENTE:   { target: tratando_pendencia }
       tratando_pendencia:
         screen: SCR-PEDIDO-DETALHE
-        on:
-          ESTENDER:            { target: acompanhando, guard: VAL-EXTENSAO-01 }
+        "on":
+          ESTENDER:            { target: acompanhando, guard: VAL-EXTENSAO-01, covers: [EDG-06] }
           AGUARDAR_LIBERACAO:  { target: acompanhando }
 
 validations:

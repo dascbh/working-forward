@@ -6,18 +6,18 @@ flows:
     states:
       iniciando:
         screen: SCR-CHAT
-        on:
+        "on":
           ENVIAR_MENSAGEM: { target: gerando, guard: VAL-MENSAGEM-01 }
       gerando:
         screen: SCR-CHAT
         invoke: CMD-GerarResposta
-        on:
+        "on":
           EVT-RespostaGerada:    { target: respondido }
           EVT-RespostaBloqueada: { target: oferecendo_escalacao, covers: [EDG-01, EDG-02] }
       respondido:
         screen: SCR-CHAT
         must_render: [resposta_com_fonte]
-        on:
+        "on":
           ENVIAR_MENSAGEM:  { target: gerando, guard: VAL-MENSAGEM-01 }
           PEDIR_HUMANO:     { target: escalando }
           SINAL_FRUSTRACAO: { target: oferecendo_escalacao, covers: [EDG-04] }
@@ -27,19 +27,19 @@ flows:
         covers: [EDG-01, EDG-02, EDG-04]
         answers: [FAQ-01, FAQ-02, FAQ-03]
         must_render: [oferta_escalacao_explicita]
-        on:
+        "on":
           PEDIR_HUMANO:      { target: escalando }
           CONTINUAR_COM_BOT: { target: iniciando }
       escalando:
         screen: SCR-CHAT
         invoke: CMD-SolicitarEscalacao
-        on:
+        "on":
           EVT-ConversaEscalada: { target: na_fila }
       na_fila:
         screen: SCR-FILA
         covers: [EDG-05]
         must_render: [posicao_na_fila, tempo_estimado]
-        on:
+        "on":
           EVT-TicketResolvido: { target: encerrado }
       encerrado:
         screen: SCR-CHAT
@@ -54,16 +54,16 @@ flows:
         invoke: CMD-MontarContexto
         covers: [EDG-06]
         must_render: [resumo_contexto, transcript_completo]
-        on:
+        "on":
           ASSUMIR: { target: atendendo }
       atendendo:
         screen: SCR-PAINEL-ATENDENTE
-        on:
+        "on":
           RESOLVER: { target: resolvendo }
       resolvendo:
         screen: SCR-PAINEL-ATENDENTE
         invoke: CMD-ResolverTicket
-        on:
+        "on":
           EVT-TicketResolvido: { target: resolvido }
       resolvido:
         screen: SCR-PAINEL-ATENDENTE
@@ -77,17 +77,17 @@ flows:
         screen: SCR-REVISAO
         covers: [EDG-07]
         must_render: [temas_agrupados_por_confianca_baixa]
-        on:
+        "on":
           EVT-TemaSinalizado: { target: revisando }
           EDITAR_BASE:        { target: editando }
       editando:
         screen: SCR-EDITOR-BASE
-        on:
+        "on":
           PUBLICAR: { target: publicando, guard: VAL-BASE-01 }
       publicando:
         screen: SCR-EDITOR-BASE
         invoke: CMD-AtualizarBase
-        on:
+        "on":
           EVT-BaseAtualizada: { target: revisando }
 
 validations:

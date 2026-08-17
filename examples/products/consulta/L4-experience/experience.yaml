@@ -6,12 +6,12 @@ flows:
     states:
       relatando:
         screen: SCR-TRIAGEM
-        on:
+        "on":
           ENVIAR: { target: classificando, guard: VAL-SINTOMA-01 }
       classificando:
         screen: SCR-TRIAGEM
         invoke: CMD-ClassificarRisco
-        on:
+        "on":
           EVT-RiscoClassificado:   { target: agendando }
           EVT-EmergenciaDetectada: { target: redirecionado_emergencia, covers: [EDG-01] }
           RISCO_INCERTO:           { target: triagem_humana, covers: [EDG-02] }
@@ -19,7 +19,7 @@ flows:
         screen: SCR-TRIAGEM
         covers: [EDG-02]
         must_render: [aviso_avaliacao_enfermeiro]
-        on:
+        "on":
           EVT-RiscoClassificado: { target: agendando }
       redirecionado_emergencia:
         screen: SCR-EMERGENCIA
@@ -27,26 +27,26 @@ flows:
         must_render: [orientacao_emergencia]
       agendando:
         screen: SCR-AGENDA
-        on:
+        "on":
           AGENDAR: { target: consentindo }
       consentindo:
         screen: SCR-CONSENTIMENTO
         covers: [EDG-03]
-        on:
+        "on":
           ACEITAR: { target: registrando_consentimento, guard: VAL-CONSENT-01 }
       registrando_consentimento:
         screen: SCR-CONSENTIMENTO
         invoke: CMD-RegistrarConsentimento
-        on:
+        "on":
           EVT-ConsentimentoRegistrado: { target: sala_de_espera }
       sala_de_espera:
         screen: SCR-SALA-ESPERA
-        on:
+        "on":
           EVT-ConsultaIniciada: { target: em_consulta }
       em_consulta:
         screen: SCR-VIDEO
         must_render: [historico_clinico_lateral]
-        on:
+        "on":
           EVT-ChamadaCaiu: { target: reconectando, covers: [EDG-04] }
           FINALIZAR:       { target: encaminhamento }
       reconectando:
@@ -54,7 +54,7 @@ flows:
         covers: [EDG-04]
         answers: [FAQ-03]
         must_render: [tentativa_reconexao, opcao_voz_ou_reagendar]
-        on:
+        "on":
           RECONECTADO: { target: em_consulta }
       encaminhamento:
         screen: SCR-ENCAMINHAMENTO
@@ -67,24 +67,24 @@ flows:
       revisando_historico:
         screen: SCR-PAINEL-MEDICO
         must_render: [historico_organizado]
-        on:
+        "on":
           INICIAR: { target: atendendo }
       atendendo:
         screen: SCR-VIDEO
-        on:
+        "on":
           REPASSAR:  { target: repassando }
           FINALIZAR: { target: concluido }
       repassando:
         screen: SCR-REPASSE
         invoke: CMD-RepassarCaso
-        on:
+        "on":
           EVT-CasoRepassado:       { target: repassado }
           ESPECIALISTA_INDISPONIVEL: { target: fila_prioritaria, covers: [EDG-05] }
       fila_prioritaria:
         screen: SCR-REPASSE
         covers: [EDG-05]
         must_render: [posicao_fila_com_historico_anexado]
-        on:
+        "on":
           EVT-CasoRepassado: { target: repassado }
       repassado:
         screen: SCR-REPASSE
