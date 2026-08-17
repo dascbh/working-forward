@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://working-forward.dev/schemas/blueprint.schema.json",
+  "title": "Working Forward L2 — blueprint.yaml",
+  "type": "object",
+  "required": ["blueprints"],
+  "properties": {
+    "blueprints": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["moment_ref", "frontstage", "backstage"],
+        "properties": {
+          "moment_ref": { "type": "string", "pattern": "^MOM-[A-Z0-9-]+$" },
+          "frontstage": { "type": "array", "items": { "type": "string" } },
+          "backstage": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["id", "action"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^BCK-[A-Z0-9-]+$" },
+                "action": { "type": "string" },
+                "sla_ms": { "type": "integer" },
+                "human": { "type": "boolean", "default": false, "description": "processo operado por humano, não por sistema" }
+              }
+            }
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["id", "rule", "on_violation"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^POL-[A-Z0-9-]+$" },
+                "rule": { "type": "string" },
+                "source": { "type": "string", "description": "ref a TEN-*, FAQ-*, PROB-* de L0" },
+                "on_violation": { "type": "string" }
+              }
+            }
+          },
+          "edge_cases": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["id", "case", "severity"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^EDG-[A-Z0-9-]+$" },
+                "case": { "type": "string" },
+                "resolution": { "type": "string" },
+                "accepted_risk": {
+                  "type": "object", "required": ["owner", "date"],
+                  "properties": { "owner": {"type": "string"}, "date": {"type": "string"}, "reason": {"type": "string"} }
+                },
+                "severity": { "enum": ["alta", "media", "baixa"] }
+              },
+              "anyOf": [ { "required": ["resolution"] }, { "required": ["accepted_risk"] } ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -9,13 +9,13 @@ Você conduz o usuário pelo pipeline Working Forward: L0 (visão) → L1 (jorna
 
 ## Detectando o estágio
 
-1. **Produto existente?** Se houver diretório com estrutura WF (`L0-vision/`, `L1-journey/`…), leia o que existe e identifique a primeira camada ausente ou desatualizada. Rode o linter se disponível (`python tools/wf_lint.py <produto>`) e apresente o estado antes de propor o próximo passo.
+1. **Produto existente?** Se houver diretório com estrutura WF (`L0-vision/`, `L1-journey/`…), leia o que existe e identifique a primeira camada ausente ou desatualizada. Invoque a skill `wf-lint` (funciona com ou sem o repositório clonado — ela decide sozinha qual linter usar) e apresente o estado real antes de propor o próximo passo.
 2. **Ideia nova?** Comece pela skill `wf-l0-vision` — a entrevista inicial.
 3. **Mudança em camada existente?** Siga o protocolo de regeneração (abaixo), não recomece do zero.
 
 ## Princípios que você garante em TODAS as camadas
 
-- **LLM compila, humano decide.** Você gera rascunhos; o usuário aprova cada camada explicitamente antes de avançar. Nunca pule um gate. Pergunte: "posso considerar a camada N aprovada e compilar a N+1?"
+- **LLM compila, humano decide.** Você gera rascunhos; o usuário aprova cada camada explicitamente antes de avançar. Antes de perguntar, invoque `wf-lint` — não deixe um problema mecânico (referência quebrada, edge case sem cobertura, schema inválido) chegar ao gate humano; isso não é julgamento de produto, é trabalho que a skill resolve sozinha. Só então pergunte: "posso considerar a camada N aprovada e compilar a N+1?" Nunca pule um gate.
 - **Toda decisão vira artefato com ID.** Nada fica só na conversa. Se o usuário decidiu algo, escreva no YAML da camada dona.
 - **Rastreabilidade.** Todo elemento novo referencia os elementos das camadas anteriores que o justificam (`vision_refs`, `source`, `implements`, `derived_from`, `covers`).
 - **Disciplina de camada.** Se o usuário discutir tela durante a jornada, ou regra de negócio durante o fluxo, registre a decisão como pendência na camada certa e devolva o foco: "ótimo ponto — isso é decisão de L2/L4, anotei lá; voltando ao momento…"
@@ -41,7 +41,7 @@ Você conduz o usuário pelo pipeline Working Forward: L0 (visão) → L1 (jorna
 └── L5-specs/      *.md
 ```
 
-Schemas de validação em `schemas/*.schema.json`; linter em `tools/wf_lint.py`. Ao fechar cada camada, valide contra o schema e rode o linter se o ambiente permitir.
+Schemas de validação em `schemas/*.schema.json`; linter em `tools/wf_lint.py` (canônico) ou na skill `wf-lint` (embarcado, sem depender do repositório clonado). Ao fechar cada camada, invoque `wf-lint`.
 
 ## Prefixos de ID (use exatamente estes)
 

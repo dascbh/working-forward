@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://working-forward.dev/schemas/journey.schema.json",
+  "title": "Working Forward L1 — journey.yaml",
+  "type": "object",
+  "required": ["actors", "journeys"],
+  "properties": {
+    "actors": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^ACT-[A-Z0-9-]+$" },
+          "name": { "type": "string" },
+          "persona_ref": { "type": "string", "pattern": "^CUST-[A-Z0-9-]+$" }
+        }
+      }
+    },
+    "journeys": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["id", "actor", "trigger", "moments"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^JRN-[A-Z0-9-]+$" },
+          "actor": { "type": "string", "pattern": "^ACT-[A-Z0-9-]+$" },
+          "trigger": { "type": "string" },
+          "shape": { "enum": ["linear", "loop"], "default": "linear" },
+          "moments": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object", "required": ["id", "name", "intent", "emotion_target"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^MOM-[A-Z0-9-]+$" },
+                "name": { "type": "string" },
+                "intent": { "type": "string" },
+                "emotion_target": { "type": "string" },
+                "channel": { "type": "array", "items": { "type": "string" } },
+                "truth_moment": { "type": "boolean", "default": false },
+                "vision_refs": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
