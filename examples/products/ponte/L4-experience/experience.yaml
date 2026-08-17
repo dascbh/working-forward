@@ -1,0 +1,131 @@
+# Ponte — L4 experience.yaml
+flows:
+  - id: FLW-REPORTAR
+    serves: [MOM-01, MOM-02]
+    initial: reportando
+    states:
+      reportando:
+        screen: SCR-REPORTAR
+        on:
+          ENVIAR: { target: enviando, guard: VAL-RELATO-01 }
+      enviando:
+        screen: SCR-REPORTAR
+        invoke: CMD-ReportarNecessidade
+        must_render: [indicador_offline_quando_aplicavel]
+        on:
+          EVT-NecessidadeReportada: { target: aguardando_verificacao }
+          EVT-NecessidadeAgrupada:  { target: atualizando_pedido_existente }
+      atualizando_pedido_existente:
+        screen: SCR-STATUS-RELATO
+        must_render: [pedido_existente_atualizado]
+      aguardando_verificacao:
+        screen: SCR-STATUS-RELATO
+        covers: [EDG-01]
+        must_render: [status_recebido_em_verificacao]
+        on:
+          EVT-NecessidadeVerificada: { target: verificado }
+          EVT-NecessidadeInvalidada: { target: invalidado, covers: [EDG-03] }
+          SEM_CONFIRMACAO_30MIN:     { target: verificado_pendente, covers: [EDG-02] }
+      verificado_pendente:
+        screen: SCR-STATUS-RELATO
+        covers: [EDG-02]
+        must_render: [urgencia_declarada_prioridade_verificacao]
+        on:
+          EVT-NecessidadeVerificada: { target: verificado }
+      invalidado:
+        screen: SCR-STATUS-RELATO
+        covers: [EDG-03]
+        must_render: [motivo_invalidacao]
+      verificado:
+        screen: SCR-STATUS-RELATO
+        must_render: [entrou_na_triagem]
+
+  - id: FLW-COORDENAR
+    serves: [MOM-10, MOM-11, MOM-12, MOM-13]
+    initial: triando
+    states:
+      triando:
+        screen: SCR-PAINEL-TRIAGEM
+        must_render: [fila_por_criticidade]
+        on:
+          DESPACHAR: { target: verificando_disponibilidade, guard: VAL-DESPACHO-01 }
+          OVERRIDE:  { target: registrando_override, guard: VAL-OVERRIDE-01, covers: [EDG-05] }
+      registrando_override:
+        screen: SCR-PAINEL-TRIAGEM
+        invoke: CMD-RegistrarOverride
+        on:
+          EVT-OverrideRegistrado: { target: verificando_disponibilidade }
+      verificando_disponibilidade:
+        screen: SCR-MAPA-UNIDADES
+        invoke: CMD-DespacharUnidade
+        on:
+          EVT-UnidadeDespachada: { target: em_transito }
+          EVT-DespachoBloqueado: { target: conflito_recurso, covers: [EDG-04] }
+      conflito_recurso:
+        screen: SCR-MAPA-UNIDADES
+        covers: [EDG-04]
+        must_render: [eta_proximo_recurso, prioridade_automatica]
+      em_transito:
+        screen: SCR-ACOMPANHAMENTO-ENTREGA
+        must_render: [linha_do_tempo_entrega]
+        on:
+          SEM_SINAL:          { target: aguardando_sincronizacao, covers: [EDG-06, EDG-07] }
+          CHEGADA_CONFIRMADA: { target: resolvendo }
+      aguardando_sincronizacao:
+        screen: SCR-ACOMPANHAMENTO-ENTREGA
+        covers: [EDG-06, EDG-07]
+        answers: [FAQ-03]
+        must_render: [ultimo_status_confirmado, tempo_decorrido, opcao_redespachar_backup]
+        on:
+          EVT-StatusSincronizado: { target: em_transito }
+      resolvendo:
+        screen: SCR-ACOMPANHAMENTO-ENTREGA
+        invoke: CMD-RegistrarResolucao
+        on:
+          EVT-NecessidadeResolvida: { target: concluido }
+      concluido:
+        screen: SCR-STATUS-RELATO
+        must_render: [necessidade_atendida]
+
+  - id: FLW-AUDITAR
+    serves: [MOM-20, MOM-21]
+    initial: acompanhando
+    states:
+      acompanhando:
+        screen: SCR-PAINEL-FINANCIADOR
+        must_render: [alocacoes_em_tempo_real, trilha_por_decisao]
+        on:
+          EVT-TrilhaAuditoriaAtualizada: { target: acompanhando }
+          ABRIR_DECISAO: { target: detalhando_decisao }
+      detalhando_decisao:
+        screen: SCR-DETALHE-DECISAO
+        must_render: [score_no_momento, unidade_despachada, override_e_justificativa_quando_aplicavel]
+        on:
+          SOLICITAR_COMPLEMENTO: { target: aguardando_complemento, covers: [EDG-08] }
+      aguardando_complemento:
+        screen: SCR-DETALHE-DECISAO
+        covers: [EDG-08]
+        must_render: [justificativa_original, timestamp_complementacao_separado]
+
+validations:
+  - id: VAL-RELATO-01
+    field: relato.descricao
+    rule: "não vazio; localização obrigatória (GPS ou referência textual); envio funciona sem conexão"
+    derived_from: EDG-01
+  - id: VAL-DESPACHO-01
+    field: despacho.unidade
+    rule: "unidade deve estar disponível — não pode estar despachada em outra necessidade ativa"
+    derived_from: POL-DESPACHO-01
+  - id: VAL-OVERRIDE-01
+    field: override.justificativa
+    rule: "obrigatória, texto livre não vazio — override nunca é aplicado sem justificativa nomeada"
+    derived_from: EDG-05
+
+screens:
+  - { id: SCR-REPORTAR,               components: [formulario-relato, indicador-offline], tokens_scope: "necessidade.*" }
+  - { id: SCR-STATUS-RELATO,          components: [status-relato-card], tokens_scope: "necessidade.*" }
+  - { id: SCR-PAINEL-TRIAGEM,         components: [fila-criticidade, override-form], tokens_scope: "triagem.*" }
+  - { id: SCR-MAPA-UNIDADES,          components: [mapa-unidades, eta-badge], tokens_scope: "logistica.*" }
+  - { id: SCR-ACOMPANHAMENTO-ENTREGA, components: [linha-do-tempo-entrega, badge-offline], tokens_scope: "logistica.*" }
+  - { id: SCR-PAINEL-FINANCIADOR,     components: [mapa-alocacoes, lista-decisoes], tokens_scope: "auditoria.*" }
+  - { id: SCR-DETALHE-DECISAO,        components: [detalhe-decisao-card, timeline-justificativa], tokens_scope: "auditoria.*" }

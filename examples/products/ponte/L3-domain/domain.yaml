@@ -1,0 +1,60 @@
+# Ponte — L3 domain.yaml
+events:
+  - { id: EVT-NecessidadeReportada,      aggregate: AGG-Necessidade, emitted_by: CMD-ReportarNecessidade }
+  - { id: EVT-NecessidadeAgrupada,       aggregate: AGG-Necessidade, emitted_by: BCK-02 }
+  - { id: EVT-NecessidadeVerificada,     aggregate: AGG-Necessidade, emitted_by: BCK-03 }
+  - { id: EVT-NecessidadeInvalidada,     aggregate: AGG-Necessidade, emitted_by: BCK-03 }
+  - { id: EVT-TriagemCalculada,          aggregate: AGG-Triagem,    emitted_by: BCK-11 }
+  - { id: EVT-OverrideRegistrado,        aggregate: AGG-Triagem,    emitted_by: CMD-RegistrarOverride }
+  - { id: EVT-UnidadeDespachada,         aggregate: AGG-Unidade,    emitted_by: CMD-DespacharUnidade }
+  - { id: EVT-DespachoBloqueado,         aggregate: AGG-Unidade,    emitted_by: BCK-12 }
+  - { id: EVT-StatusSincronizado,        aggregate: AGG-Unidade,    emitted_by: BCK-13 }
+  - { id: EVT-NecessidadeResolvida,      aggregate: AGG-Necessidade, emitted_by: CMD-RegistrarResolucao }
+  - { id: EVT-TrilhaAuditoriaAtualizada, aggregate: AGG-Auditoria,  emitted_by: BCK-21 }
+
+commands:
+  - { id: CMD-ReportarNecessidade,   actor: ACT-REPORTER, produces: [EVT-NecessidadeReportada] }
+  - { id: CMD-VerificarNecessidade,  actor: system,        produces: [EVT-NecessidadeVerificada, EVT-NecessidadeInvalidada] }
+  - { id: CMD-CalcularTriagem,       actor: system,        produces: [EVT-TriagemCalculada] }
+  - { id: CMD-RegistrarOverride,     actor: ACT-COORD,    produces: [EVT-OverrideRegistrado] }
+  - { id: CMD-DespacharUnidade,      actor: ACT-COORD,    produces: [EVT-UnidadeDespachada, EVT-DespachoBloqueado] }
+  - { id: CMD-SincronizarStatus,     actor: ACT-UNIDADE,  produces: [EVT-StatusSincronizado] }
+  - { id: CMD-RegistrarResolucao,    actor: ACT-COORD,    produces: [EVT-NecessidadeResolvida] }
+  - { id: CMD-AtualizarAuditoria,    actor: system,        produces: [EVT-TrilhaAuditoriaAtualizada] }
+  - { id: CMD-AlertarCoordenador,    actor: system,        produces: [] }
+  - { id: CMD-NotificarBackupDisponivel, actor: system,    produces: [] }
+
+reactions:
+  - { id: RCT-01, when: EVT-NecessidadeVerificada, then: CMD-CalcularTriagem,    implements: POL-TRIAGEM-01 }
+  - { id: RCT-02, when: EVT-TriagemCalculada,       then: CMD-AtualizarAuditoria, implements: POL-AUDIT-01 }
+  - { id: RCT-03, when: EVT-OverrideRegistrado,     then: CMD-AtualizarAuditoria, implements: POL-AUDIT-01 }
+  - { id: RCT-04, when: EVT-UnidadeDespachada,      then: CMD-AtualizarAuditoria, implements: POL-AUDIT-01 }
+  - { id: RCT-05, when: EVT-DespachoBloqueado,      then: CMD-AlertarCoordenador, implements: POL-DESPACHO-01 }
+  - { id: RCT-06, when: EVT-NecessidadeInvalidada,  then: CMD-AtualizarAuditoria, implements: POL-VERIF-01 }
+  - { id: RCT-07, when: EVT-StatusSincronizado,     then: CMD-AtualizarAuditoria, implements: POL-SYNC-01 }
+  - { id: RCT-08, when: EVT-DespachoBloqueado,      then: CMD-NotificarBackupDisponivel, implements: POL-TRIAGEM-01 }
+
+aggregates:
+  - { id: AGG-Necessidade, invariants: [POL-DEDUP-01, POL-VERIF-01] }
+  - { id: AGG-Triagem,     invariants: [POL-TRIAGEM-01] }
+  - id: AGG-Unidade
+    invariants: [POL-DESPACHO-01, POL-SYNC-01]
+    note: "invariante de despacho único simultâneo por unidade — resposta estrutural a FAQ-04"
+  - { id: AGG-Auditoria,   invariants: [POL-AUDIT-01] }
+
+contexts:
+  - id: CTX-Necessidade
+    aggregates: [AGG-Necessidade]
+    moments_served: [MOM-01, MOM-02]
+  - id: CTX-Triagem
+    aggregates: [AGG-Triagem]
+    moments_served: [MOM-10]
+    relationship: { with: CTX-Necessidade, type: downstream-conformist }
+  - id: CTX-Logistica
+    aggregates: [AGG-Unidade]
+    moments_served: [MOM-11, MOM-12, MOM-13]
+    relationship: { with: CTX-Triagem, type: customer-supplier }
+  - id: CTX-PrestacaoContas
+    aggregates: [AGG-Auditoria]
+    moments_served: [MOM-20, MOM-21]
+    relationship: { with: CTX-Logistica, type: downstream-conformist }

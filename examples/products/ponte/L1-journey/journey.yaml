@@ -1,0 +1,80 @@
+# Ponte — L1 journey.yaml
+actors:
+  - { id: ACT-COORD, name: "Coordenador de campo", persona_ref: CUST-COORD }
+  - { id: ACT-FINANCIADOR, name: "Financiador", persona_ref: CUST-FINANCIADOR }
+  - { id: ACT-REPORTER, name: "Sobrevivente ou voluntário de campo" }   # beneficiário/informante, não é persona pagante
+  - { id: ACT-UNIDADE, name: "Unidade de resposta" }                    # equipe humana ou unidade logística autônoma
+
+journeys:
+  - id: JRN-REPORTAR
+    actor: ACT-REPORTER
+    trigger: "sobrevivente ou voluntário de campo identifica uma necessidade não atendida"
+    shape: linear
+    moments:
+      - id: MOM-01
+        name: "Reportar a necessidade"
+        intent: "descrever o que falta, onde, e a urgência, mesmo com conectividade ruim"
+        emotion_target: alívio
+        channel: [web, sms]
+        truth_moment: false
+        vision_refs: [PROB-01]
+      - id: MOM-02
+        name: "Ter a necessidade verificada"
+        intent: "saber que o pedido foi visto e está sendo avaliado, não ignorado no vazio"
+        emotion_target: esperança
+        channel: [web, sms]
+        truth_moment: true
+        vision_refs: [TEN-02, FAQ-02]
+
+  - id: JRN-COORDENAR
+    actor: ACT-COORD
+    trigger: "necessidade verificada entra na fila de triagem"
+    shape: loop        # coordenação contínua durante toda a janela da crise — sem fim narrativo fixo
+    moments:
+      - id: MOM-10
+        name: "Triar por criticidade"
+        intent: "decidir qual necessidade recebe o recurso escasso primeiro, com critério explícito"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [TEN-01, FAQ-01]
+      - id: MOM-11
+        name: "Despachar a unidade certa"
+        intent: "alocar a unidade de resposta disponível mais adequada, sem duplicar despacho"
+        emotion_target: controle
+        channel: [web]
+        truth_moment: false
+      - id: MOM-12
+        name: "Acompanhar a entrega em tempo real, mesmo offline"
+        intent: "saber que a unidade está a caminho e prevista, sem depender de rádio constante"
+        emotion_target: tranquilidade
+        channel: [web]
+        truth_moment: true
+        vision_refs: [FAQ-03, TEN-03]
+      - id: MOM-13
+        name: "Registrar a resolução"
+        intent: "confirmar que a necessidade foi atendida e fechar o ciclo de rastreabilidade"
+        emotion_target: alívio
+        channel: [web]
+        truth_moment: false
+        vision_refs: [TEN-03]
+
+  - id: JRN-AUDITAR
+    actor: ACT-FINANCIADOR
+    trigger: "financiador acompanha ou audita a operação, durante ou depois da crise"
+    shape: linear
+    moments:
+      - id: MOM-20
+        name: "Acompanhar a alocação em tempo real"
+        intent: "ver, sem esperar relatório pós-fato, para onde o recurso está indo e por quê"
+        emotion_target: confiança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-02, TEN-03]
+      - id: MOM-21
+        name: "Auditar uma decisão de alocação"
+        intent: "entender, decisão por decisão, por que um recurso foi para a zona X e não a Y"
+        emotion_target: segurança
+        channel: [web]
+        truth_moment: true
+        vision_refs: [PROB-02, FAQ-05]

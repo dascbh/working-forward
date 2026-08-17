@@ -1,0 +1,46 @@
+# Ponte — L0 vision.yaml (extraído do prfaq.md, revisado por humano)
+product: ponte
+customer:
+  primary:
+    id: CUST-COORD
+    who: "coordenador de campo de ONG/defesa civil que aloca recursos escassos durante uma crise"
+    context: "hoje decide com planilha, rádio e WhatsApp, sem visão unificada de necessidade vs. disponibilidade"
+  secondary:
+    - id: CUST-FINANCIADOR
+      who: "agência financiadora/multilateral que custeia a operação e precisa prestar contas de para onde o recurso foi"
+      context: "hoje só recebe relatório consolidado semanas depois da crise, sem rastreabilidade de decisão em tempo real"
+
+problem:
+  - id: PROB-01
+    statement: "coordenadores de campo alocam recursos escassos sem visão em tempo real de onde a necessidade é mais crítica, causando duplicidade numa zona e abandono em outra"
+    severity: alta
+    evidence: "levantamento com 9 operações de resposta a enchente no Sul do Brasil em 2025: em média 22% dos recursos duplicados numa mesma zona enquanto outra ficava descoberta"
+  - id: PROB-02
+    statement: "financiadores não conseguem auditar, durante a crise, se o recurso doado chegou a quem mais precisava — só recebem relatório consolidado semanas depois"
+    severity: alta
+    evidence: "entrevista com 6 agências financiadoras: nenhuma tem visibilidade em tempo real de alocação durante a operação"
+
+solution_one_liner: "Necessidade verificada, respondedor certo, entrega rastreada — coordenação de crise em tempo real, com prestação de contas auditável desde o primeiro recurso alocado."
+
+tenets:
+  - id: TEN-01
+    rule: "toda alocação de recurso escasso segue a triagem de criticidade — nunca ordem de chegada"
+  - id: TEN-02
+    rule: "nenhuma necessidade reportada é descartada sem verificação — na dúvida, verificar antes de negar"
+  - id: TEN-03
+    rule: "toda decisão de alocação fica registrada e auditável, mesmo sob conectividade instável"
+
+north_star:
+  metric: "necessidades críticas atendidas em até 2 horas da verificação"
+  target: "75% em 12 meses"
+
+hard_questions:
+  - { id: FAQ-01, q: "o que acontece quando duas zonas pedem o mesmo recurso escasso ao mesmo tempo?", owner_layer: L2 }
+  - { id: FAQ-02, q: "como verificar uma necessidade reportada sem atrasar o socorro?", owner_layer: L2 }
+  - { id: FAQ-03, q: "e se o campo perder conectividade no meio da operação?", owner_layer: L4 }
+  - { id: FAQ-04, q: "como o sistema evita que a mesma unidade de resposta seja despachada para dois pedidos ao mesmo tempo?", owner_layer: L3 }
+  - { id: FAQ-05, q: "quem decide a prioridade quando o critério técnico de triagem e o pedido político ou de imprensa entram em conflito?", owner_layer: L2 }
+
+non_goals:
+  - { id: NG-01, statement: "não decide política pública de quem recebe ajuda — aplica o critério de triagem definido pela organização operadora, não define critérios humanitários por conta própria" }
+  - { id: NG-02, statement: "não substitui a comunicação de emergência oficial (192, defesa civil) — opera como camada de coordenação entre organizações já autorizadas a atuar" }

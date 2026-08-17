@@ -1,0 +1,113 @@
+# Ponte — L2 blueprint.yaml
+blueprints:
+  - moment_ref: MOM-01
+    frontstage:
+      - "formulário simplificado (texto curto + foto opcional + geolocalização); funciona offline e sincroniza quando a conexão volta"
+    backstage:
+      - { id: BCK-01, action: "fila local de relatos pendentes de sincronização enquanto o dispositivo estiver offline" }
+      - { id: BCK-02, action: "deduplicação de relatos da mesma necessidade por proximidade geográfica e janela de tempo", sla_ms: 2000 }
+    policies:
+      - id: POL-DEDUP-01
+        rule: "relatos da mesma necessidade em raio de 200m e janela de 30min são agrupados, nunca tratados como pedidos independentes"
+        source: PROB-01
+        on_violation: "relato entra como atualização do pedido existente, não como novo pedido na fila"
+    edge_cases:
+      - id: EDG-01
+        case: "relato feito sem conectividade — o dispositivo só reconecta horas depois"
+        resolution: "relato fica na fila local com o timestamp original preservado; ao sincronizar, entra na triagem com a urgência calculada a partir do timestamp real, não do momento de sincronização"
+        severity: alta
+
+  - moment_ref: MOM-02
+    frontstage:
+      - "status visível ao reportante: recebido → em verificação → verificado/triado"
+    backstage:
+      - { id: BCK-03, action: "verificação cruzada por segundo relato independente na mesma área, ou confirmação do coordenador mais próximo", human: true }
+    policies:
+      - id: POL-VERIF-01
+        rule: "necessidade só é negada após tentativa de verificação; na dúvida, verificar antes de negar"
+        source: TEN-02
+        on_violation: "necessidade permanece 'em verificação' até segunda confirmação, nunca é descartada automaticamente por falta de evidência"
+    edge_cases:
+      - id: EDG-02
+        case: "não há segundo relato nem coordenador disponível para confirmar em até 30 minutos — janela crítica"
+        resolution: "necessidade entra na triagem como 'não verificada, urgência declarada', com prioridade de verificação assim que uma unidade estiver na área — nunca fica invisível na fila só por falta de confirmação — FAQ-02"
+        severity: alta
+      - id: EDG-03
+        case: "relato comprovadamente falso ou malicioso (ex: pedido duplicado para desviar recurso)"
+        resolution: "necessidade é marcada 'invalidada' com motivo registrado; reportante recorrente falso é sinalizado para revisão humana, nunca banido automaticamente"
+        severity: media
+
+  - moment_ref: MOM-10
+    frontstage:
+      - "painel de triagem: necessidades verificadas ordenadas por criticidade calculada (urgência × vulnerabilidade × tempo em fila), com override manual justificado"
+    backstage:
+      - { id: BCK-11, action: "cálculo de score de criticidade a partir de urgência declarada, categoria de necessidade e tempo em fila", sla_ms: 1000 }
+    policies:
+      - id: POL-TRIAGEM-01
+        rule: "alocação de recurso escasso segue o score de criticidade; qualquer override manual exige justificativa registrada"
+        source: TEN-01
+        on_violation: "override sem justificativa é bloqueado; a ação não é executada"
+    edge_cases:
+      - id: EDG-04
+        case: "duas zonas pedem o mesmo recurso escasso ao mesmo tempo (ex: a última ambulância disponível) — FAQ-01"
+        resolution: "o recurso vai para o score de criticidade mais alto; a zona não atendida recebe ETA do próximo recurso disponível e prioridade automática na próxima alocação"
+        severity: alta
+      - id: EDG-05
+        case: "pressão política ou de imprensa pede prioridade para uma zona que não é a mais crítica pelo score — FAQ-05"
+        resolution: "o sistema permite o override, mas exige justificativa nomeada e registrada, visível na auditoria (JRN-AUDITAR) — a decisão é do coordenador, nunca automática, e nunca invisível"
+        severity: alta
+
+  - moment_ref: MOM-11
+    frontstage:
+      - "mapa de unidades disponíveis com capacidade, distância e ETA; despacho de um toque"
+    backstage:
+      - { id: BCK-12, action: "checagem de disponibilidade da unidade antes de confirmar o despacho, evitando despacho duplicado", sla_ms: 500 }
+    policies:
+      - id: POL-DESPACHO-01
+        rule: "uma unidade só pode estar despachada para uma necessidade por vez — o segundo despacho é bloqueado até a liberação da unidade"
+        source: PROB-01
+        on_violation: "despacho duplicado é bloqueado antes de confirmar; coordenador vê a unidade como indisponível"
+    edge_cases:
+      - id: EDG-06
+        case: "unidade aceita o despacho mas fica sem contato (offline) antes de confirmar a chegada"
+        resolution: "despacho permanece 'em trânsito não confirmado'; coordenador recebe alerta e pode redespachar um backup após tempo limite, sem cancelar a necessidade original"
+        severity: media
+
+  - moment_ref: MOM-12
+    frontstage:
+      - "linha do tempo da entrega com status; modo degradado exibido quando a unidade está sem sinal"
+    backstage:
+      - { id: BCK-13, action: "sincronização assíncrona do status da unidade quando a conectividade retorna, com o timestamp original preservado" }
+    policies:
+      - id: POL-SYNC-01
+        rule: "perda de conectividade de campo nunca cancela ou invalida uma alocação em andamento — o sistema aguarda sincronização, não assume falha"
+        source: TEN-03
+        on_violation: "alocação não pode ser cancelada automaticamente por timeout de conectividade"
+    edge_cases:
+      - id: EDG-07
+        case: "unidade fica sem conectividade por período prolongado (mais de 2 horas) durante a entrega — FAQ-03"
+        resolution: "status muda para 'aguardando sincronização', nunca 'perdido' ou 'cancelado'; coordenador vê o último status confirmado e o tempo decorrido, e decide manualmente se redespacha um backup"
+        severity: alta
+
+  - moment_ref: MOM-21
+    frontstage:
+      - "trilha de auditoria por decisão: score de criticidade no momento, unidade despachada, override e justificativa quando houver"
+    backstage:
+      - { id: BCK-21, action: "montagem da trilha de auditoria a partir do log imutável de decisões de triagem e despacho", sla_ms: 2000 }
+    policies:
+      - id: POL-AUDIT-01
+        rule: "toda decisão de alocação, automática ou com override, fica registrada de forma imutável e visível ao financiador em tempo real"
+        source: PROB-02
+        on_violation: "decisão sem registro na trilha de auditoria é tratada como incidente de conformidade"
+    edge_cases:
+      - id: EDG-08
+        case: "financiador questiona uma decisão de override tomada sob pressão de tempo, sem justificativa detalhada no momento"
+        resolution: "coordenador pode complementar a justificativa retroativamente, com o timestamp da complementação sempre visível ao lado do timestamp da decisão original — nunca substitui o registro original"
+        severity: media
+      - id: EDG-09
+        case: "volume de decisões durante um pico de crise excede a capacidade de revisão manual da trilha pelo financiador"
+        accepted_risk:
+          owner: "PM"
+          date: "2026-08-17"
+          reason: "MVP prioriza registro completo sobre ferramenta de revisão em lote; dashboard de amostragem por criticidade fica para v2"
+        severity: baixa
