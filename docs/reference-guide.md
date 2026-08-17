@@ -1,3 +1,5 @@
+> 🇺🇸 English version available: [`reference-guide.en.md`](reference-guide.en.md)
+
 # Working Forward
 ## Um framework de Product Engineering para a era dos agentes — da visão ao código, por camadas formais
 
@@ -10,7 +12,7 @@ Agosto de 2026
 
 A IA generativa resolveu as duas pontas do desenvolvimento de produto. Na ponta inicial, transformar uma ideia em narrativa — PRFAQ, pitch, documento de visão — tornou-se trivial. Na ponta final, transformar uma especificação em código também: o ecossistema de Spec-Driven Development (Spec Kit, Kiro, BMAD, Tessl) consolidou o loop spec → plano → tasks → implementação. O que permanece sem solução é o meio: a tradução da visão em **produto** — jornadas, fluxos, estados de tela, regras de negócio, validações, domínios e experiência — antes que qualquer especificação técnica faça sentido.
 
-Historicamente, esse meio nunca teve um framework único. As melhores organizações de produto do mundo (Amazon, Airbnb, Uber, Netflix) resolveram fatias dele com artefatos próprios — Working Backwards e o PRFAQ, storyboarding de jornada, service blueprinting, experimentação em escala — e a comunidade de software contribuiu com o Domain-Driven Design e o EventStorming. Mas cada seta entre esses artefatos sempre foi uma tradução manual, com perda de informação, executada por profissionais sêniores, e nunca versionada como contrato.
+Historicamente, esse meio nunca teve um framework único. As melhores organizações de produto do mundo (Amazon, Airbnb, Uber, Netflix) resolveram fatias dele com artefatos próprios — Working Backwards e o PRFAQ, storyboarding de jornada, service blueprinting, experimentação em escala — e a comunidade de software contribuiu com o Domain-Driven Design e o EventStorming. Paralelamente, a engenharia já tinha notações formais e legíveis por máquina para pedaços desse mesmo meio — Context Mapper para fronteiras de domínio, XState/SCXML para máquinas de estado de interface, BPMN para processo, Gherkin para critério de aceite — mas cada uma isolada em ferramenta de engenheiro, nunca costurada entre si nem adotada por quem desenha produto. Em ambos os casos, cada seta entre os artefatos sempre foi uma tradução manual, com perda de informação, executada por profissionais sêniores, e nunca versionada como contrato.
 
 **Working Forward** propõe formalizar esse pipeline completo como uma cadeia de artefatos versionáveis, legíveis por humanos e por agentes de IA, com rastreabilidade ponta a ponta e regeneração assistida por LLM entre camadas. O nome é deliberado: a Amazon nos ensinou a trabalhar *de trás pra frente* até a visão (Working Backwards); este framework define como trabalhar *pra frente* a partir dela — da visão ao código, sem que nenhuma camada intermediária viva apenas na cabeça de alguém.
 
@@ -34,23 +36,25 @@ Uma spec funcional que nasce sem essas camadas herda decisões implícitas — t
 
 ### 1.2 Por que o vale existe
 
-O vale entre visão e spec existe porque a camada de design de produto nunca teve uma **representação formal**. Compare:
+O vale entre visão e spec existe porque a camada de design de produto nunca teve uma **representação formal única, compartilhada por quem desenha o produto e por quem escreve o código**. Isso não significa que a formalização nunca existiu — para domínio e experiência, em particular, ela existe há décadas, só que confinada a ferramentas de engenharia que product/design nunca adotou. Compare:
 
 | Camada | Representação formal pré-IA | Versionável? | Legível por máquina? |
 |---|---|---|---|
 | Visão | PRFAQ, 6-pager | Sim (texto) | Parcialmente |
 | Jornada | Storyboard, journey map | Não (imagem/board) | Não |
 | Serviço | Service blueprint | Não (diagrama) | Não |
-| Domínio | EventStorming (post-its!) | Não | Não |
-| Experiência | Figma, protótipos | Proprietário | Não |
+| Domínio | EventStorming (post-its!); Context Mapper/CML (DSL textual de DDD, desde ~2018) | Não (EventStorming) / Sim (CML) | Não (EventStorming) / Sim (CML) — mas de uso quase nulo fora de times de arquitetura |
+| Experiência | Figma, protótipos; statecharts (Harel 1987), XState/SCXML | Proprietário (Figma) / Sim, texto (XState) | Não (Figma) / Sim (XState/SCXML) — mas como ferramenta de engenharia de front-end, fora do vocabulário de produto/design |
 | Spec funcional | PRD, Gherkin, EARS | Sim | Sim |
 | Código | Código | Sim | Sim |
 
-As três camadas do meio — jornada, serviço, domínio — e a camada de experiência viviam em murais de post-its, boards de Miro e arquivos de Figma: artefatos ricos para humanos, opacos para máquinas, impossíveis de diffar, e desconectados entre si. Quando a IA chegou, ela automatizou o que tinha representação formal (texto nas pontas) e não tocou no que não tinha.
+As três camadas do meio — jornada, serviço, domínio — e a camada de experiência viviam majoritariamente em murais de post-its, boards de Miro e arquivos de Figma: artefatos ricos para humanos, opacos para máquinas, impossíveis de diffar, e desconectados entre si. Onde existia formalização real e legível por máquina — Context Mapper para domínio, XState/SCXML para experiência —, ela vivia do lado de dentro da engenharia, num vocabulário e numa ferramenta que product managers e designers nunca tocaram, isolada das camadas vizinhas. Quando a IA chegou, ela automatizou o que tinha representação formal *compartilhada entre as duas pontas* (texto nas pontas) e não tocou no que estava formalizado mas isolado, ou no que nunca foi formalizado.
 
 ### 1.3 A tese
 
-**A tese do Working Forward é que o design de produto precisa de uma representação intermediária (IR) tão formal quanto o código** — um conjunto de artefatos estruturados, versionados em git, com identidades estáveis e referências cruzadas, que capture o que o storyboard, o blueprint, o EventStorming e o design system capturavam, de forma que:
+A tese do Working Forward não é que essas camadas nunca tiveram formalismo — várias vezes tiveram. Context Mapper formaliza domínio, XState/SCXML formaliza experiência, BPMN formaliza processo, Gherkin formaliza critério de aceite. O problema nunca foi ausência de notação; foi **fragmentação**: cada formalismo nasceu isolado, dentro de uma ferramenta de engenheiro, sem referência às camadas vizinhas, e por isso nunca foi adotado por quem desenha produto.
+
+**A tese do Working Forward é que essas camadas precisam de uma representação intermediária (IR) contínua** — não uma notação nova por camada, mas uma cadeia única, com identidades estáveis e referências cruzadas entre camadas, um conjunto de lints que verifica coerência mecanicamente, e um compilador LLM ligando cada fronteira, usável ponta a ponta por quem não é engenheiro. Um conjunto de artefatos estruturados, versionados em git, que capture — de forma encadeada — o que o storyboard, o blueprint, o EventStorming/Context Mapper e o XState/design system já capturavam separadamente, de forma que:
 
 1. Um humano consiga ler, revisar e aprovar cada camada.
 2. Um agente de IA consiga gerar o rascunho da camada N+1 a partir da camada N.
@@ -86,7 +90,7 @@ O Working Forward organiza o pipeline em sete camadas, L0 a L6. Cada uma tem: um
 ```
 L0  VISÃO         prfaq.md + vision.yaml        (Amazon — Working Backwards)
 L1  JORNADA       journey.yaml                  (Airbnb — storyboarding)
-L2  SERVIÇO       blueprint.yaml                (Uber — service blueprint)
+L2  SERVIÇO       blueprint.yaml                (service blueprint — Shostack, 1984)
 L3  DOMÍNIO       domain.yaml                   (DDD — EventStorming)
 L4  EXPERIÊNCIA   experience.yaml + tokens      (design systems)
 L5  ESPECIFICAÇÃO specs/*.md                    (PRD, EARS, Gherkin)
@@ -154,9 +158,9 @@ journeys:
 
 **Gate humano.** Product design + PM. A pergunta da revisão: "essa é a história que queremos que o cliente conte?"
 
-### L2 — Serviço (linhagem: Uber service blueprinting)
+### L2 — Serviço (linhagem: service blueprinting — Shostack, 1984)
 
-**Propósito.** Para cada momento da jornada, expor o iceberg: o que o usuário vê (frontstage), o que o sistema e a operação fazem (backstage), quais **regras de negócio** governam o passo, e — crucialmente — os **edge cases** e caminhos de falha. Esta é a camada que o Uber dominava por necessidade: um produto físico-digital onde motorista cancela, GPS falha e pricing muda em tempo real não sobrevive sem mapear exceções como cidadãs de primeira classe.
+**Propósito.** Para cada momento da jornada, expor o iceberg: o que o usuário vê (frontstage), o que o sistema e a operação fazem (backstage), quais **regras de negócio** governam o passo, e — crucialmente — os **edge cases** e caminhos de falha. A técnica é de Lynn Shostack (*Harvard Business Review*, 1984) — a notação original que separa frontstage de backstage para desenhar serviços, quase 25 anos antes de existir um app de transporte para ilustrá-la. O Uber é citado aqui como exemplo didático, não como origem: um produto físico-digital onde motorista cancela, GPS falha e pricing muda em tempo real deixa a separação frontstage/backstage e o mapeamento de exceções como cidadãs de primeira classe particularmente fáceis de visualizar — mas a disciplina em si é do blueprint de Shostack.
 
 **Artefato.** `blueprint.yaml` — por momento: frontstage, backstage, políticas, e edge cases com resolução declarada.
 
@@ -370,14 +374,18 @@ A cerimônia central é o **Layer Review**: análoga ao code review, mas por cam
 |---|---|---|---|
 | **Working Backwards/PRFAQ** | visão | narrativa | absorvido como L0 |
 | **Storyboarding (Airbnb)** | jornada | nada (visual) | formalizado como L1 |
-| **Service Blueprint** | operação | nada (diagrama) | formalizado como L2 |
+| **Service Blueprint (Shostack, 1984)** | operação | nada (diagrama) | formalizado como L2 |
 | **EventStorming/DDD** | domínio | semi (workshop) | formalizado como L3 |
-| **Design systems/tokens** | UI | tokens apenas | estendido em L4 (statecharts) |
+| **Context Mapper/CML** | domínio | sim — DSL textual para bounded contexts e relações upstream/downstream, desde ~2018 | absorvido em L3: o `domain.yaml` usa o mesmo vocabulário de relação (`upstream-published-language`) que o CML já formalizava, só que confinado a times de arquitetura |
+| **BPMN** | processo | sim — padrão OMG, notação textual/XML para fluxos de processo, desde 2011 | complementar, não absorvido: BPMN modela o fluxograma do processo de negócio; L2/L3 modelam momento + regra + evento, um recorte diferente do mesmo território |
+| **Gherkin/Cucumber** | critério de aceite | sim — texto estruturado (Given/When/Then), machine-readable desde ~2007 | absorvido em L5: EARS é o dialeto do WF, mas o par pergunta/resposta é o mesmo que Gherkin já resolvia |
+| **Example Mapping (Matt Wynne)** | descoberta de regras e exemplos | não — técnica de workshop colaborativo, sem artefato persistente por padrão | próximo em espírito de L2: descobre regras e edge cases antes de escrever critério de aceite, exatamente o que o blueprint faz — mas o blueprint persiste o resultado como YAML versionado e referenciável, não como cartões de sessão |
+| **Design systems/tokens** | UI | tokens (visual) apenas; statecharts (Harel 1987) e XState/SCXML já formalizavam estados/transições/guardas de interface, só que como ferramenta de engenharia de front-end | tokens estendidos em L4; o formalismo de statecharts é adotado diretamente, não inventado |
 | **Spec Kit / Kiro / BMAD** | spec→código | specs e tasks | jusante — consomem L5 |
 | **fde-kernel e afins** | enforcement | invariantes | recebem as políticas como invariantes |
 | **Figma Make / UX Pilot** | protótipo | nada (output visual) | renderizadores possíveis de L4 |
 
-A leitura da tabela é a tese do paper em forma de grade: cada linha acima do meio tinha o *conteúdo* certo e nenhuma formalização; cada linha abaixo tinha formalização e começava tarde demais. O Working Forward não inventa nenhuma das ideias — inventa a **coluna que faltava**: representação formal contínua da visão ao código.
+A leitura da tabela não é que a formalização nunca existiu — para domínio, processo, experiência e critério de aceite, ela existe há anos, em DSLs e notações de engenharia (Context Mapper, BPMN, XState, Gherkin) que nunca saíram do mundo de quem programa. O que faltava não era notação; era **encadeamento**: cada técnica resolve uma camada isolada, com seu próprio formato, sua própria ferramenta, seu próprio público — sem IDs que atravessem camadas, sem lint que verifique coerência entre elas, sem um caminho que uma pessoa de produto ou design consiga percorrer sem aprender a sintaxe de um compilador de estados. O Working Forward não inventa as ideias de baixo — o quadro acima deixa isso claro — inventa a **coluna que faltava**: uma cadeia única, referenciada por ID, lintada mecanicamente entre camadas, compilada por LLM, e utilizável ponta a ponta por quem não é engenheiro.
 
 ---
 

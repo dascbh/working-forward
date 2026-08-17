@@ -1,6 +1,6 @@
 ---
 name: wf-l2-service
-description: Camada L2 do Working Forward — compila a jornada (L1) em service blueprint estilo Uber, produzindo blueprint.yaml com frontstage, backstage, políticas de negócio e edge cases. Use quando existir journey.yaml aprovado e for hora de mapear regras de negócio, validações, exceções, casos de falha, SLAs e operação; ou quando o usuário pedir service blueprint, regras de negócio, edge cases ou "o que acontece quando dá errado" num produto WF. Esta é a camada onde o agente tem alavancagem máxima: enumere edge cases exaustivamente.
+description: Camada L2 do Working Forward — compila a jornada (L1) em service blueprint (técnica de Shostack, 1984), produzindo blueprint.yaml com frontstage, backstage, políticas de negócio e edge cases. Use quando existir journey.yaml aprovado e for hora de mapear regras de negócio, validações, exceções, casos de falha, SLAs e operação; ou quando o usuário pedir service blueprint, regras de negócio, edge cases ou "o que acontece quando dá errado" num produto WF. Esta é a camada onde o agente tem alavancagem máxima: enumere edge cases exaustivamente.
 ---
 
 # WF L2 — Serviço (blueprint + regras + edge cases)
